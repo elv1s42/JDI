@@ -18,7 +18,9 @@ package com.epam.commons;
  */
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static com.epam.commons.LinqUtils.any;
 import static java.lang.String.format;
@@ -60,6 +62,7 @@ public final class ReflectionUtils {
     }
 
     public static boolean isInterface(Class<?> type, Class<?> expected) {
+
         if (type == null || expected == null || type == Object.class)
             return false;
         if (type == expected)
@@ -68,18 +71,31 @@ public final class ReflectionUtils {
         return any(interfaces, i -> isInterface(i, expected)) || isInterface(type.getSuperclass(), expected);
     }
 
-    public static List<Field> getFields(Object obj, Class<?> type) {
-        return LinqUtils.where(obj.getClass().getDeclaredFields(), field -> !isStatic(field.getModifiers()) && (isClass(field, type) || isInterface(field, type)));
+    public static List<Field> getFields(Object obj, Class<?>... types) {
+        return getFields(obj, types, Object.class);
+    }
+    public static List<Field> getFields(Object obj, Class<?>[] types, Class<?>... stopTypes) {
+        return getFields(getFieldsDeep(obj.getClass(), stopTypes), types, f -> !isStatic(f.getModifiers()));
+    }
+    public static List<Field> getFields(List<Field> fields, Class<?>[] types, Function<Field, Boolean> filter) {
+        return LinqUtils.where(fields,
+                field -> filter.apply(field) && isExpectedClass(field, types));
     }
 
-    public static List<Field> getStaticFields(Class<?> parent, Class<?>... types) {
-        return LinqUtils.where(parent.getDeclaredFields(), field -> isStatic(field.getModifiers()) && (isExpectedClass(field, types)));
+    private static List<Field> getFieldsDeep(Class<?> type, Class<?>... types) {
+        if (asList(types).contains(type))
+            return new ArrayList<>();
+        List<Field> result = new ArrayList<>(asList(type.getDeclaredFields()));
+        result.addAll(getFieldsDeep(type.getSuperclass(), types));
+        return result;
     }
 
     public static <T> T getFirstField(Object obj, Class<?>... types) {
         return (T) getValueField(LinqUtils.first(obj.getClass().getDeclaredFields(), field -> isExpectedClass(field, types)), obj);
     }
-    public static boolean isExpectedClass(Field field, Class<?>... types) {
+    private static boolean isExpectedClass(Field field, Class<?>... types) {
+        if (types == null || types.length == 0)
+            return true;
         for (Class<?> type : types)
             if (isClass(field, type) || isInterface(field, type))
                 return true;
@@ -92,6 +108,44 @@ public final class ReflectionUtils {
             return field.get(obj);
         } catch (Exception ex) {
             throw new RuntimeException(format("Can't get field '%s' value", field.getName()));
+        }
+    }
+
+    public static Object convertStringToType(String value, Field field)
+    {
+        Class<?> clazz = field.getType();
+        if (clazz.isAssignableFrom(String.class)|| value == null)
+            return value;
+        if (clazz.isAssignableFrom(Byte.class))
+            return Byte.parseByte(value);
+        if (clazz.isAssignableFrom(Short.class))
+            return Short.parseShort(value);
+        if (clazz.isAssignableFrom(Integer.class))
+            return Integer.parseInt(value);
+        if (clazz.isAssignableFrom(Long.class))
+            return Long.parseLong(value);
+        if (clazz.isAssignableFrom(Float.class))
+            return Float.parseFloat(value);
+        if (clazz.isAssignableFrom(Double.class))
+            return Float.parseFloat(value);
+        if (clazz.isAssignableFrom(Boolean.class))
+            return Boolean.parseBoolean(value);
+
+        throw new IllegalArgumentException("Can't parse field " + field.getName() + ". Type [" + clazz + "] is unsupported");
+    }
+
+    public static <T> Class<T> checkEntityIsNotNull(Class<T> entityClass) {
+        if (entityClass == null)
+            throw new IllegalArgumentException("Entity type was not specified");
+        return entityClass;
+    }
+
+    public static <T> T newEntity(Class<T> entityClass) {
+        try {
+            return entityClass.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException("Can't instantiate " + entityClass.getSimpleName() +
+                    ". You must have empty constructor to do this");
         }
     }
 }

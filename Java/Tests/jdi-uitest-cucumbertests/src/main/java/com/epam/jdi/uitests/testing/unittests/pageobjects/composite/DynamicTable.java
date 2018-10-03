@@ -1,11 +1,11 @@
 package com.epam.jdi.uitests.testing.unittests.pageobjects.composite;
 
+import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.ICell;
+import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.ITable;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import com.epam.jdi.uitests.web.selenium.elements.common.CheckBox;
 import com.epam.jdi.uitests.web.selenium.elements.common.Link;
 import com.epam.jdi.uitests.web.selenium.elements.complex.table.Table;
-import com.epam.jdi.uitests.web.selenium.elements.complex.table.interfaces.ICell;
-import com.epam.jdi.uitests.web.selenium.elements.complex.table.interfaces.ITable;
 import org.openqa.selenium.By;
 
 /**
@@ -50,7 +50,7 @@ class CellCheckBox extends CheckBox {
 
     @Override
     protected boolean isCheckedAction() {
-        return Boolean.valueOf(new Element(((CellCheckBox) this).
+        return Boolean.valueOf(new Element(this.
                 getWebElement().
                 findElement(By.xpath("../input"))).
                 getInvisibleElement().getAttribute("checked"));

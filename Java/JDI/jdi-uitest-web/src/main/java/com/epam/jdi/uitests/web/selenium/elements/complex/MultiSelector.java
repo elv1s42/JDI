@@ -21,7 +21,6 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
 import com.epam.commons.EnumUtils;
 import com.epam.commons.LinqUtils;
 import com.epam.jdi.uitests.core.interfaces.base.IMultiSelector;
-import com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils;
 import com.epam.jdi.uitests.web.selenium.elements.apiInteract.GetElementModule;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -31,6 +30,7 @@ import java.util.List;
 import static com.epam.commons.LinqUtils.*;
 import static com.epam.commons.PrintUtils.print;
 import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
+import static com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils.fillByTemplate;
 
 /**
  * Created by roman.i on 03.10.2014.
@@ -57,7 +57,7 @@ public abstract class MultiSelector<TEnum extends Enum> extends BaseSelector<TEn
         if (getLocator().toString().contains("%s"))
             throw exception("Can't clear options. Specify allLabelsLocator or fix optionsNamesLocator (should not contain '%s')");
         if (allLabels() != null) {
-            clearElements(allLabels().getWebElements());
+            clearElements(allLabels().avatar.searchAll().getElements());
             return;
         }
         List<WebElement> elements = getAvatar().searchAll().getElements();
@@ -77,17 +77,17 @@ public abstract class MultiSelector<TEnum extends Enum> extends BaseSelector<TEn
         foreach(where(els, el -> isSelectedAction(el.getText())), WebElement::click);
     }
 
-    protected WebElement getElement(String name) {
+    public WebElement getWebElement(String name) {
         if (!hasLocator() && allLabels() == null)
             throw exception("Can't get option. No optionsNamesLocator and allLabelsLocator found");
         if (getLocator().toString().contains("%s"))
-            return new GetElementModule(WebDriverByUtils.fillByTemplate(getLocator(), name), getAvatar().context, this).getElements().get(0);
+            return new GetElementModule(fillByTemplate(getLocator(), name), this).getElements().get(0);
         if (allLabels() != null)
-            return getElement(allLabels().getWebElements(), name);
-        return getElement(getElementsFromTag(), name);
+            return getWebElement(allLabels().avatar.searchAll().getElements(), name);
+        return getWebElement(getElementsFromTag(), name);
     }
 
-    private WebElement getElement(List<WebElement> els, String name) {
+    private WebElement getWebElement(List<WebElement> els, String name) {
         if (els == null)
             throw exception("Can't get option. No optionsNamesLocator and allLabelsLocator found");
         List<WebElement> elements = where(els, el -> el.getText().equals(name));
@@ -96,38 +96,38 @@ public abstract class MultiSelector<TEnum extends Enum> extends BaseSelector<TEn
         throw exception("Can't get option. No optionsNamesLocator and allLabelsLocator found");
     }
 
-    protected WebElement getElement(int index) {
+    protected WebElement getWebElement(int num) {
         if (!hasLocator() && allLabels() == null)
             throw exception("Can't get option. No optionsNamesLocator and allLabelsLocator found");
         if (getLocator().toString().contains("%s"))
             throw exception("Can't get options. Specify allLabelsLocator or fix optionsNamesLocator (should not contain '%s')");
         if (allLabels() != null)
-            return getElement(allLabels().getWebElements(), index);
-        return getElement(getElementsFromTag(), index);
+            return getWebElement(allLabels().avatar.searchAll().getElements(), num);
+        return getWebElement(getElementsFromTag(), num);
     }
 
-    private WebElement getElement(List<WebElement> els, int index) {
-        if (index <= 0)
-            throw exception("Can't get option with index '%s'. Index should be 1 or more", index);
-        if (index > els.size())
-            throw exception("Can't get option with index '%s'. Found only %s options", index, els.size());
-        return els.get(index - 1);
+    private WebElement getWebElement(List<WebElement> els, int num) {
+        if (num <= 0)
+            throw exception("Can't get option with num '%s'. Number should be 1 or more", num);
+        if (num > els.size())
+            throw exception("Can't get option with num '%s'. Found only %s options", num, els.size());
+        return els.get(num - 1);
     }
 
     protected boolean isSelectedAction(String name) {
-        return isSelectedAction(getElement(name));
+        return isSelectedAction(getWebElement(name));
     }
 
-    protected boolean isSelectedAction(int index) {
-        return isSelectedAction(getElement(index));
+    protected boolean isSelectedAction(int num) {
+        return isSelectedAction(getWebElement(num));
     }
 
     protected void selectListAction(String... names) {
         foreach(names, this::selectAction);
     }
 
-    protected void selectListAction(int... indexes) {
-        for (int i : indexes) selectAction(i);
+    protected void selectListAction(int... nums) {
+        for (int i : nums) selectAction(i);
     }
 
     protected String getValueAction() {
@@ -144,76 +144,140 @@ public abstract class MultiSelector<TEnum extends Enum> extends BaseSelector<TEn
         return this;
     }
 
+    /**
+     * @param names Specify names
+     *              Select options with name (use text) from list (change their state selected/deselected)
+     */
     public final void select(String... names) {
         actions.select(this::selectListAction, names);
     }
 
+    /**
+     * @param names Specify names
+     *              Select options with name (use enum) from list (change their state selected/deselected)
+     */
     public final void select(TEnum... names) {
         select(toStringArray(LinqUtils.select(names, EnumUtils::getEnumValue)));
     }
 
-    public final void select(int... indexes) {
-        actions.select(this::selectListAction, indexes);
+    /**
+     * @param nums Specify indexes
+     *                Select options with name (use index) from list (change their state selected/deselected)
+     */
+    public final void select(int... nums) {
+        actions.select(this::selectListAction, nums);
     }
 
+    /**
+     * @param names Specify names
+     *              Check only specified options (use text) from list (all other options unchecked)
+     */
     public final void check(String... names) {
         clear();
         select(names);
     }
 
+    /**
+     * @param names Specify names
+     *              Check only specified options (use enum) from list (all other options unchecked)
+     */
     public final void check(TEnum... names) {
         clear();
         select(names);
     }
 
-    public final void check(int... indexes) {
+    /**
+     * @param nums Specify indexes
+     *                Check only specified options (use index) from list (all other options unchecked)
+     */
+    public final void check(int... nums) {
         clear();
-        select(indexes);
+        select(nums);
     }
 
+    /**
+     * @param names Specify names
+     *              Uncheck only specified options (use text) from list (all other options checked)
+     */
     public final void uncheck(String... names) {
         checkAll();
         select(names);
     }
 
+    /**
+     * @param names Specify names
+     *              Uncheck only specified options (use enum) from list (all other options checked)
+     */
     public final void uncheck(TEnum... names) {
         checkAll();
         select(names);
     }
 
-    public final void uncheck(int... indexes) {
+    /**
+     * @param nums Specify indexes
+     *                Uncheck only specified options (use index) from list (all other options checked)
+     */
+    public final void uncheck(int... nums) {
         checkAll();
-        select(indexes);
+        select(nums);
     }
 
+    /**
+     * @return Get names of checked options
+     */
     public final List<String> areSelected() {
         return actions.areSelected(this::getNames, this::isSelectedAction);
     }
 
+    /**
+     * @param names Specify names
+     * Wait while all options with names (use enum) selected. Return false if this not happens
+     */
     public final void waitSelected(TEnum... names) {
         waitSelected(toStringArray(LinqUtils.select(names, EnumUtils::getEnumValue)));
     }
 
+    /**
+     * @param names Specify names
+     * Wait while all options with names (use text) selected. Return false if this not happens
+     */
     public final void waitSelected(String... names) {
         actions.waitSelected(n -> timer().wait(() -> isSelectedAction(n)), names);
     }
 
+    /**
+     * @return Get names of unchecked options
+     */
     public final List<String> areDeselected() {
         return actions.areDeselected(this::getNames, n -> timer().wait(() -> isSelectedAction(n)));
     }
 
+    /**
+     * @param names Specify names
+     * Wait while all options with names (use enum) deselected. Return false if this not happens
+     */
     public final void waitDeselected(TEnum... names) {
         waitDeselected(toStringArray(LinqUtils.select(names, EnumUtils::getEnumValue)));
     }
 
+    /**
+     * @param names Specify names
+     * Wait while all options with names (use text) deselected. Return false if this not happens
+     */
     public final void waitDeselected(String... names) {
         actions.waitDeselected(n -> timer().wait(() -> isSelectedAction(n)), names);
     }
 
+    /**
+     * Set all options unchecked
+     */
     public void clear() {
         invoker.doJAction("Clear Options", this::clearAction);
     }
 
+    /**
+     * Set all options checked
+     */
     public void checkAll() {
         foreach(where(getOptions(), label -> !isSelectedAction(label)), this::selectAction);
     }

@@ -18,9 +18,10 @@ package com.epam.jdi.uitests.web.selenium.elements.complex.table;
  */
 
 
+import com.epam.commons.linqinterfaces.JFuncTTREx;
 import com.epam.commons.map.MapArray;
 import com.epam.jdi.uitests.core.interfaces.common.IText;
-import com.epam.jdi.uitests.web.selenium.elements.complex.table.interfaces.ICell;
+import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -33,10 +34,12 @@ import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
 /**
  * Created by 12345 on 26.10.2014.
  */
-public class Columns extends TableLine {
+public class Columns extends TableLine implements IColumn {
     public Columns() {
         hasHeader = true;
+        hasHeader = true;
         elementIndex = ElementIndexType.Nums;
+        headersLocator = By.xpath(".//th");
         headersLocator = By.xpath(".//th");
         defaultTemplate = By.xpath(".//tr/td[%s]");
     }
@@ -45,18 +48,18 @@ public class Columns extends TableLine {
         return table.getWebElement().findElements(headersLocator);
     }
 
-    protected List<WebElement> getFirstLine() {
-        return table.rows().getLineAction(1);
+    protected List<WebElement> getCrossFirstLine() {
+        return ((Rows)table.rows()).getLineAction(1);
     }
 
     public final MapArray<String, ICell> getColumn(String colName) {
         try {
             int rowsCount = table.rows().count();
-            List<String> headers = table.rows().headers();
+            List<String> headers = select(table.rows().headers(), String::toLowerCase);
             List<WebElement> webColumn = timer().getResultByCondition(
                     () -> getLineAction(colName), els -> els.size() == rowsCount);
             return new MapArray<>(rowsCount,
-                    table.rows().headers::get,
+                    headers::get,
                     value -> table.cell(webColumn.get(value), new Column(colName), new Row(headers.get(value))));
         } catch (Exception | Error ex) {
             throw throwColumnException(colName, ex.getMessage());
@@ -65,7 +68,7 @@ public class Columns extends TableLine {
 
     public final List<String> getColumnValue(String colName) {
         try {
-            return select(table.columns().getLineAction(colName), WebElement::getText);
+            return select(getLineAction(colName), WebElement::getText);
         } catch (Exception | Error ex) {
             throw throwColumnException(colName, ex.getMessage());
         }
@@ -81,8 +84,27 @@ public class Columns extends TableLine {
                 cell -> cell);
     }
 
+    private MapArray<String, MapArray<String, ICell>> withValueByRule(
+            Row row, JFuncTTREx<String, String, Boolean> func) {
+        Collection<String> rowNames = row.hasName()
+                ? table.rows().getRowAsText(row.getName()).where(func).keys()
+                : table.rows().getRowAsText(row.getNum()).where(func).keys();
+        return new MapArray<>(rowNames, key -> key, this::getColumn);
+    }
+    public final MapArray<String, MapArray<String, ICell>> withValue(String value, Row row) {
+        return withValueByRule(row, (key, val) -> val.equals(value));
+    }
+    public final MapArray<String, MapArray<String, ICell>> containsValue(String value, Row row) {
+        return withValueByRule(row, (key, val) -> val.contains(value));
+    }
+    public final MapArray<String, MapArray<String, ICell>> matchesRegEx(String regEx, Row row) {
+        return withValueByRule(row, (key, val) -> val.matches(regEx));
+    }
+
     public final MapArray<String, ICell> getColumn(int colNum) {
-        if (count() < 0 || table.columns().count() < colNum || colNum <= 0)
+        if (colNum <= 0)
+            throw exception("Table indexes starts from 1");
+        if (count() < 0 || count() < colNum || colNum <= 0)
             throw exception("Can't Get Column '%s'. [num] > RowsCount(%s).", colNum, count());
         try {
             int rowsCount = table.rows().count();
@@ -97,10 +119,12 @@ public class Columns extends TableLine {
     }
 
     public final List<String> getColumnValue(int colNum) {
+        if (colNum <= 0)
+            throw exception("Table indexes starts from 1");
         if (count() < 0 || count() < colNum || colNum <= 0)
             throw exception("Can't Get Column '%s'. [num] > RowsCount(%s).", colNum, count());
         try {
-            return select(table.columns().getLineAction(colNum), WebElement::getText);
+            return select(getLineAction(colNum), WebElement::getText);
         } catch (Exception | Error ex) {
             throw throwColumnException(colNum + "", ex.getMessage());
         }

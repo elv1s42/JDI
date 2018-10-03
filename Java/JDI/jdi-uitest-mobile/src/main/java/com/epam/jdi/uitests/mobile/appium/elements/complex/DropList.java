@@ -24,7 +24,6 @@ import com.epam.jdi.uitests.mobile.appium.elements.base.Clickable;
 import com.epam.jdi.uitests.mobile.appium.elements.base.Element;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.Select;
 
 import java.util.function.Function;
 
@@ -51,11 +50,11 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
 
     public DropList(By valueLocator, By optionsNamesLocator, By allOptionsNamesLocator) {
         super(optionsNamesLocator, allOptionsNamesLocator);
-        this.button = new GetElementType(valueLocator);
+        this.button = new GetElementType(valueLocator, this);
     }
 
     protected Clickable button() {
-        return button.get(new Clickable(), getAvatar());
+        return button.get(Clickable.class);
     }
 
     protected void expandAction(String name) {
@@ -75,7 +74,7 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
             super.selectListAction(names);
         } else
             for (String name : names)
-                new Select(getWebElement()).selectByVisibleText(name);
+                getSelector().selectByVisibleText(name);
     }
 
     @Override
@@ -87,7 +86,7 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
             super.selectListAction(indexes);
         } else
             for (int index : indexes)
-                new Select(getWebElement()).selectByIndex(index);
+                getSelector().selectByIndex(index);
     }
 
     @Override
@@ -108,11 +107,17 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         return getText.equals("") && getValue != null ? getValue : getText;
     }
 
+    /**
+     * Waits while Element becomes visible
+     */
     @Override
     public void waitDisplayed() {
         button().waitDisplayed();
     }
 
+    /**
+     * Waits while Element becomes invisible
+     */
     @Override
     public void waitVanished() {
         button().waitVanished();
@@ -134,18 +139,34 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         return button().wait(resultFunc, condition, timeoutSec);
     }
 
+    /**
+     * @param attributeName Specify attribute name
+     * @param value         Specify attribute value
+     *                      Sets attribute value for Element
+     */
     public void setAttribute(String attributeName, String value) {
         button().setAttribute(attributeName, value);
     }
 
+    /**
+     * @return Get Element’s text
+     */
     public final String getText() {
         return actions.getText(this::getTextAction);
     }
 
+    /**
+     * @param text Specify expected text
+     * @return Wait while Element’s text contains expected text. Returns Element’s text
+     */
     public final String waitText(String text) {
         return actions.waitText(text, this::getTextAction);
     }
 
+    /**
+     * @param regEx Specify expected regular expression Text
+     * @return Wait while Element’s text matches regEx. Returns Element’s text
+     */
     public final String waitMatchText(String regEx) {
         return actions.waitMatchText(regEx, this::getTextAction);
     }
@@ -154,10 +175,21 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         return new Element(getLocator()).getWebElement();
     }
 
+    /**
+     * Get element attribute
+     *
+     * @param name Specify name for attribute
+     * @return Returns chosen attribute
+     */
     public String getAttribute(String name) {
         return button().getAttribute(name);
     }
 
+    /**
+     * @param name  Specify attribute name
+     * @param value Specify attribute value
+     * Waits while attribute gets expected value. Return false if this not happens
+     */
     public void waitAttribute(String name, String value) {
         button().waitAttribute(name, value);
     }

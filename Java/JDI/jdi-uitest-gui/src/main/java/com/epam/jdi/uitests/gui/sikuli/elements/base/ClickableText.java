@@ -3,7 +3,6 @@ package com.epam.jdi.uitests.gui.sikuli.elements.base;
 import com.epam.jdi.uitests.core.interfaces.base.IClickable;
 import com.epam.jdi.uitests.core.interfaces.base.IHasValue;
 import com.epam.jdi.uitests.core.interfaces.common.IText;
-
 import org.sikuli.script.Pattern;
 
 /**

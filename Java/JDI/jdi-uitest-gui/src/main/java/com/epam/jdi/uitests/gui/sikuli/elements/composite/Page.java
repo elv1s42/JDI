@@ -22,17 +22,27 @@ public class Page extends BaseElement implements IPage {
     double similarity;
     protected CheckPageTypes checkPage = CheckPageTypes.EQUAL;
 
+    public String getImageRoot() { return null; }
+    public void setImageRoot(String imageRoot) {}
     public Page() { }
 
+    /**
+     * @return Get Element’s name
+     */
     @Override
     public String getName() {
         return null;
     }
 
+    /**
+     * Check that page opened
+     */
     @Override
     public void checkOpened() {  }
 
-
+    /**
+     * Opens url specified for page
+     */
     @Override
     public <T extends IPage> T open() {
         return null;

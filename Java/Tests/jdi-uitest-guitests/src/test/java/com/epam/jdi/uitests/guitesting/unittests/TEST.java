@@ -3,9 +3,9 @@ package com.epam.jdi.uitests.guitesting.unittests;
 import com.epam.commons.Timer;
 import com.epam.jdi.uitests.gui.GuiSettings;
 import com.epam.jdi.uitests.guitesting.unittests.pageobjects.EpamJDIScreen;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.JavascriptExecutor;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,10 +28,8 @@ public class TEST {
         driver = new ChromeDriver();
         driver.manage().window().maximize();
         JavascriptExecutor js = (JavascriptExecutor) driver;
-        driver.get("http://ecse00100176.epam.com");
+        driver.get("https://jdi-framework.github.io/tests");
         js.executeScript("document.body.style.zoom='100%'");
-
-
         GuiSettings.init();
         init(EpamJDIScreen.class);
 
@@ -40,15 +38,11 @@ public class TEST {
 
     @Test
     public void test1() {
-
         Timer timer = new Timer(1000);
        // homePage.logoImage.dragAndDropBy(homePage.searchButton);
-
        // homePage.logoImage.doubleClick();
        // homePage.logoImage.rightClick();
-
        // homePage.logoImage.waitVanished();
-
         homePage.searchButton.click();
         //homePage.searchField.input("ddddd");
     }

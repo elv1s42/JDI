@@ -19,8 +19,8 @@ package com.epam.jdi.uitests.web.selenium.elements.actions;
 
 
 import com.epam.commons.linqinterfaces.JAction;
-import com.epam.jdi.uitests.web.selenium.elements.BaseElement;
-import org.openqa.selenium.WebElement;
+import com.epam.commons.linqinterfaces.JFuncTREx;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +72,7 @@ public class ElementsActions {
     }
 
     public void setValue(String value, Consumer<String> setValueAction) {
-        invoker().doJAction("Get value", () -> setValueAction.accept(value));
+        invoker().doJAction("Set value", () -> setValueAction.accept(value));
     }
 
     // Click Action
@@ -114,6 +114,7 @@ public class ElementsActions {
                 result -> "Checkbox is " + (result ? "checked" : "unchecked"));
     }
 
+
     // Input Actions
     public void inputLines(JAction clearAction, Consumer<String> inputAction, String... textLines) {
         invoker().doJAction("Input several lines of text in textarea",
@@ -153,6 +154,9 @@ public class ElementsActions {
     public void select(int index, Consumer<Integer> selectByIndexAction) {
         invoker().doJAction(format("Select '%s'", index), () -> selectByIndexAction.accept(index));
     }
+    public void hover(String name, Consumer<String> hoverAction) {
+        invoker().doJAction(format("Hover '%s'", name), () -> hoverAction.accept(name));
+    }
 
     public boolean isSelected(String name, Function<String, Boolean> isSelectedAction) {
         return invoker().doJActionResult(format("Wait is '%s' selected", name), () -> isSelectedAction.apply(name));
@@ -177,8 +181,12 @@ public class ElementsActions {
             listIndexes.add(Integer.toString(i));
         invoker().doJAction(String.format("Select '%s'", print(listIndexes)), () -> selectListAction.accept(indexes));
     }
+    // Expand Action
+    public void expand(JAction expandAction) {
+        invoker().doJAction("Expand Element", expandAction);
+    }
 
-    public List<String> areSelected(Supplier<List<String>> getNames, Function<String, Boolean> waitSelectedAction) {
+    public List<String> areSelected(Supplier<List<String>> getNames, JFuncTREx<String, Boolean> waitSelectedAction) {
         return invoker().doJActionResult("Are selected", () ->
                 where(getNames.get(), waitSelectedAction));
     }
@@ -207,20 +215,5 @@ public class ElementsActions {
             return true;
         });
         asserter.isTrue(result);
-    }
-
-    public <T> T findImmediately(Supplier<T> func, T ifError) {
-        element.setWaitTimeout(0);
-        Function<WebElement, Boolean> temp = element.avatar.localElementSearchCriteria;
-        element.avatar.localElementSearchCriteria = el -> true;
-        T result;
-        try {
-            result = func.get();
-        } catch (Exception | Error ex) {
-            result = ifError;
-        }
-        element.avatar.localElementSearchCriteria = temp;
-        element.restoreWaitTimeout();
-        return result;
     }
 }

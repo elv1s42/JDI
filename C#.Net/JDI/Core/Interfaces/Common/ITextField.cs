@@ -1,5 +1,4 @@
-﻿using System;
-using Epam.JDI.Core.Interfaces.Base;
+﻿using Epam.JDI.Core.Interfaces.Base;
 
 //using System.IComparable instead of interface CharSequence
 
@@ -12,7 +11,7 @@ namespace Epam.JDI.Core.Interfaces.Common
      *             Input text in textfield
      */
         //TODO [JDIAction]
-        void Input(String text);
+        void Input(string text);
 
         /**
          * @param text Specify text to send keys to TextField
@@ -20,13 +19,13 @@ namespace Epam.JDI.Core.Interfaces.Common
          */
         //TODO [JDIAction]
         //TODO SendKeys() was default
-        void SendKeys(String text);
+        void SendKeys(string text);
         /**
          * @param text Specify text to input to TextField
          *             Clear and input text in textfield
          */
         //TODO [JDIAction]
-        void NewInput(String text);
+        void NewInput(string text);
 
         /**
          * Clear textfield

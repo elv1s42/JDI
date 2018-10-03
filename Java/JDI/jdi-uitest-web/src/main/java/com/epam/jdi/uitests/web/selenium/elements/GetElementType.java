@@ -19,6 +19,8 @@ package com.epam.jdi.uitests.web.selenium.elements;
 
 
 import com.epam.jdi.uitests.web.selenium.elements.apiInteract.GetElementModule;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
+import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import org.openqa.selenium.By;
 
 /**
@@ -26,18 +28,31 @@ import org.openqa.selenium.By;
  */
 public class GetElementType {
     private By locator;
+    private Object parent;
 
+    public boolean hasLocator() {
+        return locator != null;
+    }
     public GetElementType() {
-        this(null);
     }
 
-    public GetElementType(By locator) {
+    public GetElementType(By locator, Object parent) {
         this.locator = locator;
+        this.parent = parent;
     }
 
-    public <T extends BaseElement> T get(T element, GetElementModule avatar) {
-        return locator == null
-                ? null
-                : (T) element.setAvatar(locator, avatar);
+    public <T extends BaseElement> T get(Class<T> clazz) {
+        try {
+            if (locator == null)
+                return null;
+            else {
+                T result = clazz.newInstance();
+                Element el = new Element(locator);
+                el.setParent(parent);
+                result.init(parent, new GetElementModule(locator, el));
+                return result;
+            }
+        } catch (Exception ignore) { return null; }
     }
+
 }

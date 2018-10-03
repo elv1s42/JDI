@@ -18,18 +18,16 @@ package com.epam.jdi.uitests.mobile;
  */
 
 
+import com.epam.jdi.uitests.core.logger.JDILogger;
 import com.epam.jdi.uitests.core.settings.JDISettings;
+import com.epam.jdi.uitests.mobile.appium.TestNGCheck;
 import com.epam.jdi.uitests.mobile.appium.driver.AppiumDriverFactory;
 import com.epam.jdi.uitests.mobile.appium.driver.DriverTypes;
 import com.epam.jdi.uitests.mobile.appium.driver.ScreenshotMaker;
-import com.epam.web.matcher.testng.Check;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
 import java.util.function.Supplier;
-
-import static com.epam.web.matcher.base.DoScreen.SCREEN_ON_FAIL;
-import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Created by Roman_Iovlev on 11/13/2015.
@@ -45,7 +43,9 @@ public class WebSettings extends JDISettings {
     }
 
     public static AppiumDriverFactory getDriverFactory() {
-        return (AppiumDriverFactory) JDISettings.driverFactory;
+        if (driverFactory == null)
+            driverFactory = new AppiumDriverFactory();
+        return (AppiumDriverFactory) driverFactory;
     }
 
     public static String useDriver(DriverTypes driverName) {
@@ -65,14 +65,14 @@ public class WebSettings extends JDISettings {
     }
 
     public static void init() {
-        driverFactory = new AppiumDriverFactory();
-        asserter = new Check() {
+        asserter = new TestNGCheck() {
             @Override
             protected String doScreenshotGetMessage() {
                 return ScreenshotMaker.doScreenshotGetMessage();
             }
-        }.doScreenshot(SCREEN_ON_FAIL);
-        logger = getLogger("JDI Logger");
+        };
+        asserter.doScreenshot("screen_on_fail");
+        logger = new JDILogger("JDI Logger");
         timeouts = new WebTimeoutSettings();
     }
 }

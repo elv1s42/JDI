@@ -70,22 +70,38 @@ public class Pagination extends BaseElement implements IPagination {
         this.lastLocator = lastLocator;
     }
 
+    /**
+     * Choose Next page
+     */
     public void next() {
         invoker.doJAction("Choose Next page", () -> nextAction().click());
     }
 
+    /**
+     * Choose Previous page
+     */
     public void previous() {
         invoker.doJAction("Choose Previous page", () -> previousAction().click());
     }
 
+    /**
+     * hoose First page
+     */
     public void first() {
         invoker.doJAction("Choose First page", () -> firstAction().click());
     }
 
+    /**
+     * Choose Last page
+     */
     public void last() {
         invoker.doJAction("Choose Last page", () -> lastAction().click());
     }
 
+    /**
+     * @param index Specify page index
+     *              Choose page by index
+     */
     public void selectPage(int index) {
         invoker.doJAction(format("Choose '%s' page", index), () -> pageAction(index).click());
     }
@@ -93,7 +109,7 @@ public class Pagination extends BaseElement implements IPagination {
     private Clickable getClickable(String name) {
         List<Field> fields = getFields(this, IClickable.class);
         Field result = LinqUtils.first(fields,
-                cl -> AnnotationsUtil.getElementName(cl).toLowerCase().contains(name.toLowerCase()));
+                field -> AnnotationsUtil.getElementName(field).toLowerCase().contains(name.toLowerCase()));
         return (Clickable) getValueField(result, this);
     }
 
@@ -113,7 +129,7 @@ public class Pagination extends BaseElement implements IPagination {
         if (nextLink != null)
             return nextLink;
 
-        if (getLocator() != null && getLocator().toString().contains("'%s'"))
+        if (getLocator() != null && getLocator().toString().contains("%s"))
             return new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), shortName));
         throw exception(cantChooseElementMsg("Next", shortName, "nextAction"));
     }
@@ -127,7 +143,7 @@ public class Pagination extends BaseElement implements IPagination {
         if (prevLink != null)
             return prevLink;
 
-        if (getLocator() != null && getLocator().toString().contains("'%s'"))
+        if (getLocator() != null && getLocator().toString().contains("%s"))
             return new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), shortName));
         throw exception(cantChooseElementMsg("Previous", shortName, "previousAction"));
     }
@@ -141,7 +157,7 @@ public class Pagination extends BaseElement implements IPagination {
         if (firstLink != null)
             return firstLink;
 
-        if (getLocator() != null && getLocator().toString().contains("'%s'"))
+        if (getLocator() != null && getLocator().toString().contains("%s"))
             return new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), shortName));
         throw exception(cantChooseElementMsg("First", shortName, "firstAction"));
     }
@@ -155,19 +171,35 @@ public class Pagination extends BaseElement implements IPagination {
         if (lastLink != null)
             return lastLink;
 
-        if (getLocator() != null && getLocator().toString().contains("'%s'"))
+        if (getLocator() != null && getLocator().toString().contains("%s"))
             return new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), shortName));
         throw exception(cantChooseElementMsg("Last", shortName, "lastAction"));
     }
 
     private Clickable pageAction(int index) {
         String shortName = "page";
-        if (getLocator() != null && getLocator().toString().contains("'%s'"))
+        if (getLocator() != null && getLocator().toString().contains("%s"))
             return new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), index));
 
         Clickable pageLink = getClickable(shortName);
         if (pageLink != null)
             return pageLink;
         throw exception(cantChooseElementMsg(Integer.toString(index), shortName, "pageAction"));
+    }
+
+    public boolean isDisplayed() {
+        return false;
+    }
+
+    public boolean isHidden() {
+        return false;
+    }
+
+    public void waitDisplayed() {
+
+    }
+
+    public void waitVanished() {
+
     }
 }

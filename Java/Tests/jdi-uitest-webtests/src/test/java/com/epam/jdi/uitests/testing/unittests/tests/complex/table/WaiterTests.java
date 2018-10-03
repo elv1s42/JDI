@@ -4,12 +4,12 @@ import com.epam.jdi.uitests.testing.unittests.tests.complex.table.base.SupportTa
 import com.epam.web.matcher.testng.Check;
 import org.testng.annotations.Test;
 
+import static com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.Column.column;
+import static com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.Row.row;
+import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.HOME_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.SUPPORT_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData.*;
-import static com.epam.jdi.uitests.web.selenium.elements.complex.table.Column.column;
-import static com.epam.jdi.uitests.web.selenium.elements.complex.table.Row.row;
-import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.web.matcher.testng.Assert.isFalse;
 import static com.epam.web.matcher.testng.Assert.isTrue;
 
@@ -56,7 +56,7 @@ public class WaiterTests extends SupportTableTestsBase {
     public void cellWaitMatchTextTest() {
         isInState(HOME_PAGE);
         runParallel(SUPPORT_PAGE::open);
-
+        String t = table().cell(2, 2).getText();
         checkText(() -> table().cell(2, 2).waitMatchText("[a-zA-Z, ]*JUnit,[a-zA-Z ]*"), "TestNG, JUnit, Custom");
     }
 
@@ -65,7 +65,7 @@ public class WaiterTests extends SupportTableTestsBase {
         isInState(HOME_PAGE);
         runParallel(SUPPORT_PAGE::open);
 
-        isTrue(() -> table().waitHaveRows());
+        isTrue(() -> table().waitHasRows());
     }
 
     @Test
@@ -87,6 +87,6 @@ public class WaiterTests extends SupportTableTestsBase {
         isFalse(table().waitRows(7));
         tableWaitTomeOut -= timer.timePassedInMSec();
 
-        new Check("Wait Row time out").isTrue(-tableWaitTomeOut < 5200);
+        new Check("Wait Row time out").isTrue(-tableWaitTomeOut < 6000);
     }
 }

@@ -17,41 +17,46 @@ package com.epam.jdi.uitests.web.selenium.driver;
  * along with JDI. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
 
-import org.openqa.selenium.os.CommandLine;
-import org.openqa.selenium.os.WindowsUtils;
-
-import java.util.Map;
-
-import static com.epam.commons.LinqUtils.first;
-import static com.epam.commons.LinqUtils.where;
-import static com.epam.commons.TryCatchUtil.tryGetResult;
+import static com.epam.jdi.uitests.core.settings.JDISettings.asserter;
+import static org.openqa.selenium.os.WindowsUtils.killByName;
 
 /**
  * Created by 12345 on 26.01.2015.
  */
 public final class WebDriverUtils {
-    private WebDriverUtils() { }
-    public static void killAllRunWebDrivers() {
+
+    private WebDriverUtils() {
+    }
+
+    private static void killMacOSBrowsersByName(String driverName) {
         try {
-            String pid = getPid();
-            while (pid != null) {
-                killPID(pid);
-                pid = getPid();
-            }
-        } catch (Exception ignore) {
-            // Ignore in case of not windows Operation System or any other errors
+            Process process = new ProcessBuilder(
+                    "/usr/bin/pkill",
+                    "-f",
+                    ".*" + driverName + ".*")
+                    .start();
+            process.waitFor();
+        }
+        catch (IOException | InterruptedException e1){
+            e1.printStackTrace();
         }
     }
 
-    private static String getPid() {
-        return first(where((Map<String, String>) tryGetResult(WindowsUtils::procMap), el -> el.getKey() != null
-                && (el.getKey().contains("firefox") && el.getKey().contains("-foreground")
-                || el.getKey().contains("chromedriver")
-                || el.getKey().contains("IEDriverServer"))));
-    }
-
-    private static void killPID(String processID) {
-        new CommandLine("taskkill", "/f", "/t", "/pid", processID).execute();
+    //TODO Add OS type and current user check.
+    //TODO Try to use C/C++ Library to work with processes.
+    public static void killAllRunWebBrowsers() throws IOException {
+        String os = System.getProperty("os.name");
+        if (os.contains("Mac")) {
+            asserter.ignore(() -> killMacOSBrowsersByName("Firefox"));
+            asserter.ignore(() -> killMacOSBrowsersByName("Chrome"));
+        }
+        else {
+            asserter.ignore(() -> killByName("chromedriver.exe"));
+            asserter.ignore(() -> killByName("geckodriver.exe"));
+            asserter.ignore(() -> killByName("IEDriverServer.exe"));
+            asserter.ignore(() -> killByName("MicrosoftWebDriver.exe"));
+        }
     }
 }

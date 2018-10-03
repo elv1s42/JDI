@@ -18,6 +18,7 @@ package com.epam.jdi.uitests.web.selenium.driver;
  */
 
 
+import com.epam.commons.StringUtils;
 import com.epam.commons.Timer;
 import org.openqa.selenium.TakesScreenshot;
 
@@ -57,9 +58,9 @@ public class ScreenshotMaker {
                 result = result.substring(2);
         if (result.charAt(0) != '\\')
             result = "\\" + result;
-        return (result.charAt(result.length() - 1) == '\\')
-                ? result
-                : result + "\\";
+        if (result.charAt(result.length() - 1) != '\\')
+            result = result + "\\";
+        return StringUtils.correctPath(result);
     }
 
     public static String doScreenshotGetMessage() {
@@ -78,7 +79,8 @@ public class ScreenshotMaker {
         if (!driverFactory.hasRunDrivers())
             return "Can't do Screenshot. No Drivers run";
         String path = new File(".").getCanonicalPath() + getValidUrl(pathSuffix);
-        String screensFilePath = getFileName(path + (testName != null ? testName : "screen") + Timer.nowDate().replace(":", "-"));
+        String screensFilePath = getFileName(path + (testName != null ? testName : "screen")
+                + Timer.nowDate().replace(":", "-"));
         new File(screensFilePath).getParentFile().mkdirs();
         File screensFile = ((TakesScreenshot) driverFactory.getDriver()).getScreenshotAs(FILE);
         copyFile(screensFile, new File(screensFilePath));

@@ -42,23 +42,41 @@ public class ClickableText extends Clickable implements IHasValue, IClickable, I
     }
 
     protected String getTextAction() {
-        String getValue = getWebElement().getAttribute("value");
         String getText = getWebElement().getText();
-        return getText.equals("") && getValue != null ? getValue : getText;
+        if (!getText.equals(""))
+            return getText;
+        String getValue = getWebElement().getAttribute("value");
+        return getValue != null
+                ? getValue
+                : getText;
     }
 
+    /**
+     * @return Get value of Element
+     */
     public final String getValue() {
         return actions.getValue(this::getTextAction);
     }
 
+    /**
+     * @return Get Element’s text
+     */
     public final String getText() {
         return actions.getText(this::getTextAction);
     }
 
+    /**
+     * @param text Specify expected text
+     * @return Wait while Element’s text contains expected text. Returns Element’s text
+     */
     public final String waitText(String text) {
         return actions.waitText(text, this::getTextAction);
     }
 
+    /**
+     * @param regEx Specify expected regular expression Text
+     * @return Wait while Element’s text matches regEx. Returns Element’s text
+     */
     public final String waitMatchText(String regEx) {
         return actions.waitMatchText(regEx, this::getTextAction);
     }

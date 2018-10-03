@@ -22,6 +22,8 @@ import com.epam.jdi.uitests.core.interfaces.common.ITextField;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
+
 /**
  * Text Field control implementation
  *
@@ -30,6 +32,7 @@ import org.openqa.selenium.WebElement;
  * @author Zharov Alexandr
  */
 public class TextField extends Text implements ITextField {
+    public By labelLocator;
     public TextField() {
         super();
     }
@@ -37,7 +40,9 @@ public class TextField extends Text implements ITextField {
     public TextField(By byLocator) {
         super(byLocator);
     }
-
+    public TextField(By byLocator, By label) {
+        super(byLocator); labelLocator = label;
+    }
     public TextField(WebElement webElement) {
         super(webElement);
     }
@@ -58,23 +63,48 @@ public class TextField extends Text implements ITextField {
         getWebElement().click();
     }
 
+    public String label() {
+        if (labelLocator == null)
+            throw exception("Label locator no specified");
+        Label label = new Label(labelLocator);
+        label.setParent(getParent());
+        return label.getText();
+    }
+    /**
+     * @param value Specify element value
+     *              Set value to Element
+     */
     public final void setValue(String value) {
         actions.setValue(value, this::setValueAction);
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Input text in textfield
+     */
     public final void input(CharSequence text) {
         actions.input(text, this::inputAction);
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Clear and input text in textfield
+     */
     public void newInput(CharSequence text) {
         clear();
         input(text);
     }
 
+    /**
+     * Clear textfield
+     */
     public final void clear() {
         actions.clear(this::clearAction);
     }
 
+    /**
+     * Focus(click) on textfield
+     */
     public final void focus() {
         actions.focus(this::focusAction);
     }

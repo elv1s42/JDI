@@ -23,7 +23,10 @@ import com.epam.jdi.uitests.web.selenium.elements.base.ClickableText;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.net.URL;
+
 import static com.epam.commons.Timer.getByCondition;
+import static com.epam.commons.TryCatchUtil.tryGetResult;
 import static java.lang.String.format;
 
 /**
@@ -47,15 +50,31 @@ public class Link extends ClickableText implements ILink {
         return getWebElement().getAttribute("href");
     }
 
+    /**
+     * @return Get URL
+     */
+    public final URL getURL(){ return tryGetResult(() -> new URL(getReference())); }
+
+    /**
+     * @return Get link destination
+     */
     public final String getReference() {
         return invoker.doJActionResult("Get link reference", this::getReferenceAction, href -> "Get href of link '" + href + "'");
     }
 
+    /**
+     * @param text Specify expected text
+     * @return Wait while link destination contains expected text. Returns link destination
+     */
     public final String waitReferenceContains(String text) {
         return invoker.doJActionResult(format("Wait link contains '%s'", text),
                 () -> getByCondition(this::getReferenceAction, t -> t.contains(text)));
     }
 
+    /**
+     * @param regEx Specify expected regular expression Text
+     * @return Wait while link destination contains expected text. Returns link destination
+     */
     public final String waitMatchReference(String regEx) {
         return invoker.doJActionResult(format("Wait link match regex '%s'", regEx),
                 () -> getByCondition(this::getReferenceAction, t -> t.matches(regEx)));
@@ -65,6 +84,9 @@ public class Link extends ClickableText implements ILink {
         return getWebElement().getAttribute("title");
     }
 
+    /**
+     * @return Get links tooltip
+     */
     public final String getTooltip() {
         return invoker.doJActionResult("Get link tooltip", this::getTooltipAction, href -> "Get link tooltip '" + href + "'");
     }

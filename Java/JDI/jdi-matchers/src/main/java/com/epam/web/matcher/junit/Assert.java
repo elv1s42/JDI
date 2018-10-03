@@ -39,17 +39,23 @@ public final class Assert {
     private Assert() { }
     private static DoScreen doScreen = SCREEN_ON_FAIL;
 
-    private static BaseMatcher matcher = new Check().doScreenshot(doScreen);
+    private static BaseMatcher matcher = new Check().setScreenshot(doScreen);
     public static void setMatcher(BaseMatcher matcher) {
         Assert.matcher = matcher;
     }
-
-    public static BaseMatcher ignoreCase() {
-        return matcher.ignoreCase();
+    public static BaseMatcher doScreen(DoScreen doScreen) {
+        return matcher.doScreenshot(doScreen);
     }
+
+    public static BaseMatcher ignoreCase() { return matcher.ignoreCase(); }
+    public static BaseMatcher waitTimeout(long timeout) { return matcher.setTimeout(timeout);}
+    public static BaseMatcher setTimeout(long timeout) { return waitTimeout(timeout);}
 
     public static RuntimeException exception(String msg, Object... args) {
         return matcher.exception(msg, args);
+    }
+    public static void fail(String failMessage, Object... args) {
+        throw exception(failMessage, args);
     }
 
     public static <T> void areEquals(T actual, T expected, String failMessage) {
@@ -140,22 +146,6 @@ public final class Assert {
         matcher.isNotEmpty(obj);
     }
 
-    public static <T> void areSame(T actual, T expected, String failMessage) {
-        matcher.areSame(actual, expected, failMessage);
-    }
-
-    public static <T> void areSame(T actual, T expected) {
-        matcher.areSame(actual, expected);
-    }
-
-    public static <T> void assertSame(T actual, T expected, String failMessage) {
-        matcher.areSame(actual, expected, failMessage);
-    }
-
-    public static <T> void assertSame(T actual, T expected) {
-        matcher.areSame(actual, expected);
-    }
-
     public static <T> void areDifferent(T actual, T expected, String failMessage) {
         matcher.areDifferent(actual, expected, failMessage);
     }
@@ -179,6 +169,13 @@ public final class Assert {
     public static <T> void listEquals(Collection<T> actual, Collection<T> expected) {
         matcher.listEquals(actual, expected);
     }
+    public static <T> void listContains(Collection<T> actual, T expected, String failMessage) { matcher.listContains(actual, expected, failMessage); }
+
+    public static <T> void listContains(Collection<T> actual, T expected) { matcher.listContains(actual, expected); }
+
+    public static <T> void listContains(Collection<T> actual, Collection<T> expected, String failMessage) { matcher.listContains(actual, expected, failMessage); }
+
+    public static <T> void listContains(Collection<T> actual, Collection<T> expected) { matcher.listContains(actual, expected); }
 
     public static <T> void arrayEquals(T actual, T expected, String failMessage) {
         matcher.arrayEquals(actual, expected, failMessage);
@@ -187,37 +184,42 @@ public final class Assert {
     public static <T> void arrayEquals(T actual, T expected) {
         matcher.arrayEquals(actual, expected);
     }
-
-    public static <T> void entityIncludeMapArray(MapArray<String, String> actual, T entity, String failMessage) {
-        matcher.entityIncludeMapArray(actual, entity, failMessage);
+    public static <T> void entitiesAreEquals(T actual, T expected, String failMessage) {
+        matcher.entitiesAreEquals(actual, expected, failMessage);
+    }
+    public static  <T> void entitiesAreEquals(T actual, T expected) {
+        matcher.entitiesAreEquals(actual, expected);
+    }
+    public static <T> void entityIncludeMapArray(T entity, MapArray<String, String> expected, String failMessage) {
+        matcher.entityIncludeMapArray(entity, expected, failMessage);
     }
 
-    public static <T> void entityIncludeMapArray(MapArray<String, String> actual, T entity) {
-        matcher.entityIncludeMapArray(actual, entity);
+    public static <T> void entityIncludeMapArray(T entity, MapArray<String, String> expected) {
+        matcher.entityIncludeMapArray(entity, expected);
     }
 
-    public static <T> void entityEqualsToMapArray(MapArray<String, String> actual, T entity, String failMessage) {
-        matcher.entityEqualsToMapArray(actual, entity, failMessage);
+    public static <T> void entityEqualsToMapArray(T entity, MapArray<String, String> expected, String failMessage) {
+        matcher.entityEqualsToMapArray(entity, expected, failMessage);
     }
 
-    public static <T> void entityEqualsToMapArray(MapArray<String, String> actual, T entity) {
-        matcher.entityEqualsToMapArray(actual, entity);
+    public static <T> void entityEqualsToMapArray(T entity, MapArray<String, String> expected) {
+        matcher.entityEqualsToMapArray(entity, expected);
     }
 
-    public static <T> void entityIncludeMap(Map<String, String> actual, T entity, String failMessage) {
-        matcher.entityIncludeMap(actual, entity, failMessage);
+    public static <T> void entityIncludeMap(T entity, Map<String, String> expected, String failMessage) {
+        matcher.entityIncludeMap(entity, expected, failMessage);
     }
 
-    public static <T> void entityIncludeMap(Map<String, String> actual, T entity) {
-        matcher.entityIncludeMap(actual, entity);
+    public static <T> void entityIncludeMap(T entity, Map<String, String> expected) {
+        matcher.entityIncludeMap(entity, expected);
     }
 
-    public static <T> void entityEqualsToMap(Map<String, String> actual, T entity, String failMessage) {
-        matcher.entityEqualsToMap(actual, entity, failMessage);
+    public static <T> void entityEqualsToMap(T entity, Map<String, String> expected, String failMessage) {
+        matcher.entityEqualsToMap(entity, expected, failMessage);
     }
 
-    public static <T> void entityEqualsToMap(Map<String, String> actual, T entity) {
-        matcher.entityEqualsToMap(actual, entity);
+    public static <T> void entityEqualsToMap(T entity, Map<String, String> expected) {
+        matcher.entityEqualsToMap(entity, expected);
     }
 
     public static void isSortedByAsc(int[] array, String failMessage) {
@@ -252,19 +254,22 @@ public final class Assert {
         matcher.isSortedByDesc(array);
     }
 
-    public static BaseMatcher.ListChecker eachElementOf(List<Object> list) {
+    public static <T> BaseMatcher.ListChecker eachElementOf(List<T> list) {
         return matcher.eachElementOf(list);
     }
-
-    public static BaseMatcher.ListChecker eachElementOf(Object[] array) {
+    public static <T> BaseMatcher.ListChecker eachElementOf(T[] array) {
         return matcher.eachElementOf(array);
     }
-
-    public static BaseMatcher.ListChecker assertEach(List<Object> list) {
+    public static <T> BaseMatcher.ListChecker assertEach(List<T> list) {
         return eachElementOf(list);
     }
-
-    public static BaseMatcher.ListChecker assertEach(Object[] array) {
+    public static <T> BaseMatcher.ListChecker assertEach(T[] array) {
+        return eachElementOf(array);
+    }
+    public static <T> BaseMatcher.ListChecker each(List<T> list) {
+        return eachElementOf(list);
+    }
+    public static <T> BaseMatcher.ListChecker each(T[] array) {
         return eachElementOf(array);
     }
 
@@ -385,23 +390,23 @@ public final class Assert {
         areDifferent(obj, obj2);
     }
 
-    public static void throwException(String actionName, JAction action, Class<Exception> exceptionClass, String exceptionText) {
+    public static <E extends Exception> void throwException(String actionName, JAction action, Class<E> exceptionClass, String exceptionText) {
         matcher.throwException(actionName, action, exceptionClass, exceptionText);
     }
 
     public static void throwException(String actionName, JAction action, String exceptionText) {
         matcher.throwException(actionName, action, exceptionText);
     }
-    public static void throwException(String actionName, JAction action, Class<Exception> exceptionClass) {
+    public static <E extends Exception> void throwException(String actionName, JAction action, Class<E> exceptionClass) {
         matcher.throwException(actionName, action, exceptionClass);
     }
-    public static void throwException(JAction action, Class<Exception> exceptionClass, String exceptionText) {
+    public static <E extends Exception> void throwException(JAction action, Class<E> exceptionClass, String exceptionText) {
         matcher.throwException(action, exceptionClass, exceptionText);
     }
     public static void throwException(JAction action, String exceptionText) {
         matcher.throwException(action, exceptionText);
     }
-    public static void throwException(JAction action, Class<Exception> exceptionClass) {
+    public static <E extends Exception> void throwException(JAction action, Class<E> exceptionClass) {
         matcher.throwException(action, exceptionClass);
     }
     public static void hasNoExceptions(String actionName, JAction action) {
@@ -428,35 +433,35 @@ public final class Assert {
     }
 
 
-    public static <T> void entityIncludeMapArray(Supplier<MapArray<String, String>> actual, T entity, String failMessage) {
-        matcher.entityIncludeMapArray(actual, entity, failMessage);
+    public static <T> void entityIncludeMapArray(T entity, Supplier<MapArray<String, String>> expected, String failMessage) {
+        matcher.entityIncludeMapArray(entity, expected, failMessage);
     }
 
-    public static <T> void entityIncludeMapArray(Supplier<MapArray<String, String>> actual, T entity) {
-        matcher.entityIncludeMapArray(actual, entity);
+    public static <T> void entityIncludeMapArray(T entity, Supplier<MapArray<String, String>> expected) {
+        matcher.entityIncludeMapArray(entity, expected);
     }
 
-    public static <T> void entityEqualsToMapArray(Supplier<MapArray<String, String>> actual, T entity, String failMessage) {
-        matcher.entityEqualsToMapArray(actual, entity, failMessage);
+    public static <T> void entityEqualsToMapArray(T entity, Supplier<MapArray<String, String>> expected, String failMessage) {
+        matcher.entityEqualsToMapArray(entity, expected, failMessage);
     }
 
-    public static <T> void entityEqualsToMapArray(Supplier<MapArray<String, String>> actual, T entity) {
-        matcher.entityEqualsToMapArray(actual, entity);
+    public static <T> void entityEqualsToMapArray(T entity, Supplier<MapArray<String, String>> expected) {
+        matcher.entityEqualsToMapArray(entity, expected);
     }
 
-    public static <T> void entityIncludeMap(Supplier<Map<String, String>> actual, T entity, String failMessage) {
-        matcher.entityIncludeMap(actual, entity, failMessage);
+    public static <T> void entityIncludeMap(T entity, Supplier<Map<String, String>> expected, String failMessage) {
+        matcher.entityIncludeMap(entity, expected, failMessage);
     }
 
-    public static <T> void entityIncludeMap(Supplier<Map<String, String>> actual, T entity) {
-        matcher.entityIncludeMap(actual, entity);
+    public static <T> void entityIncludeMap(T entity, Supplier<Map<String, String>> expected) {
+        matcher.entityIncludeMap(entity, expected);
     }
 
-    public static <T> void entityEqualsToMap(Supplier<Map<String, String>> actual, T entity, String failMessage) {
-        matcher.entityEqualsToMap(actual, entity, failMessage);
+    public static <T> void entityEqualsToMap(T entity, Supplier<Map<String, String>> expected, String failMessage) {
+        matcher.entityEqualsToMap(entity, expected, failMessage);
     }
 
-    public static <T> void entityEqualsToMap(Supplier<Map<String, String>> actual, T entity) {
-        matcher.entityEqualsToMap(actual, entity);
+    public static <T> void entityEqualsToMap(T entity, Supplier<Map<String, String>> expected) {
+        matcher.entityEqualsToMap(entity, expected);
     }
 }

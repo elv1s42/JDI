@@ -4,16 +4,16 @@ package cucmberTests;
  * Created by Dmitry_Lebedev1 on 1/22/2016.
  */
 
-import org.junit.runner.RunWith;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import cucumber.api.testng.AbstractTestNGCucumberTests;
+import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-        features = "src/test/resources/features",
-        glue = {"com.epam.cucmber.stepdefs", "cucmberTests.stepdefs"}
+        features = "classpath:features",
+        glue = {"com.epam.jdi.cucumber.stepdefs.en", "cucmberTests"}
 )
-public class Runner {
-
+public class Runner extends AbstractTestNGCucumberTests {
 
 }

@@ -23,8 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static java.util.stream.Collectors.toCollection;
-
 /**
  * Created by Roman_Iovlev on 6/9/2015.
  */
@@ -39,7 +37,7 @@ public class Verify extends BaseMatcher {
     }
 
     public static List<String> getFails() {
-        List<String> result = fails.stream().collect(toCollection(LinkedList::new));
+        List<String> result = new LinkedList<>(fails);
         fails.clear();
         return result;
     }

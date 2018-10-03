@@ -18,31 +18,37 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
  */
 
 
+import com.epam.commons.Timer;
 import com.epam.jdi.uitests.core.interfaces.base.IVisible;
-import com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils;
-import com.epam.jdi.uitests.web.selenium.elements.BaseElement;
 import com.epam.jdi.uitests.web.selenium.elements.GetElementType;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
 import com.epam.jdi.uitests.web.selenium.elements.base.Clickable;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
+import com.epam.jdi.uitests.web.selenium.elements.base.IHasElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.epam.commons.EnumUtils.getEnumValue;
 import static com.epam.commons.LinqUtils.first;
 import static com.epam.commons.LinqUtils.select;
+import static com.epam.commons.ReflectionUtils.isInterface;
 import static com.epam.commons.Timer.waitCondition;
+import static com.epam.jdi.uitests.core.settings.JDISettings.asserter;
 import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
+import static com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils.fillByTemplate;
 
 /**
  * Created by Roman_Iovlev on 7/9/2015.
  */
-abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements IVisible {
+
+abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements IVisible, IHasElement {
     protected boolean isSelector;
-    private GetElementType allLabels = new GetElementType();
+    protected GetElementType allLabels = new GetElementType();
 
     BaseSelector() {
         super();
@@ -54,81 +60,102 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
 
     BaseSelector(By optionsNamesLocator, By allLabelsLocator) {
         super(optionsNamesLocator);
-        this.allLabels = new GetElementType(allLabelsLocator);
+        this.allLabels = new GetElementType(allLabelsLocator, getParent());
     }
 
-    protected TextList<TEnum> allLabels() {
-        return allLabels.get(new TextList<>(), getAvatar());
+    protected TextList allLabels() {
+        return allLabels.get(TextList.class);
     }
 
     protected void selectAction(String name) {
+        Clickable cl = getElement(name);
+        if (cl != null)
+            cl.click();
+    }
+    protected Clickable getElement(String name) {
         if (!hasLocator() && allLabels() == null)
             throw exception("Can't find option '%s'. No optionsNamesLocator and allLabelsLocator found", name);
-        if (getLocator().toString().contains("%s")) {
-            new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), name)).click();
-            return;
-        }
-        if (allLabels() != null) {
-            selectFromList(allLabels().getWebElements(), name);
-            return;
-        }
+        if (hasLocator() && getLocator().toString().contains("%s"))
+            return new GetElementType(fillByTemplate(getLocator(), name), this).get(Clickable.class);
+        if (allLabels() != null)
+            return allLabels().getLocator().toString().contains("%s")
+                ? new GetElementType(fillByTemplate(allLabels().getLocator(), name), this).get(Clickable.class)
+                : getFromList(allLabels().avatar.searchAll().getElements(), name);
         List<WebElement> elements = getAvatar().searchAll().getElements();
         WebElement element = elements.get(0);
         if (elements.size() == 1 && element.getTagName().equals("select"))
             if (getSelector().getOptions().size() > 0) {
                 getSelector().selectByVisibleText(name);
-                return;
+                return null;
             }
             else throw exception("<select> tag has no <option> tags. Please Clarify element locator (%s)", this);
         if (elements.size() == 1 && element.getTagName().equals("ul"))
             elements = element.findElements(By.tagName("li"));
-        selectFromList(elements, name);
+        return getFromList(elements, name);
     }
 
-    private void selectFromList(List<WebElement> els, String name) {
-        WebElement element = first(els, el -> el.getText().equals(name));
+    private Clickable getFromList(List<WebElement> els, String name) {
+        WebElement element = first(els, el -> el.getText().toLowerCase().trim().equals(name.toLowerCase().trim()));
         if (element == null)
             throw exception("Can't find option '%s'. Please fix allLabelsLocator", name);
-        element.click();
+        Clickable cl = new Clickable(element);
+        cl.setParent(getParent());
+        return cl;
+    }
+    @Override
+    public WebElement getWebElement() {
+        if (avatar.hasWebElement())
+            return avatar.getElement();
+        Object parent = getParent();
+        return parent != null && isInterface(parent.getClass(), IHasElement.class)
+                ? ((IHasElement)parent).getWebElement()
+                : null;
+    }
+    public void setWebElement(WebElement webElement) {
+        Element element = new Element();
+        element.setParent(getParent());
+        element.setWebElement(webElement);
+        setParent(element);
     }
 
-    protected void selectAction(int index) {
+    protected void selectAction(int num) {
+        Clickable cl = getElement(num);
+        if (cl != null)
+            cl.click();
+    }
+    protected Clickable getElement(int num) {
         if (!hasLocator() && allLabels() == null)
-            throw exception("Can't find option '%s'. No optionsNamesLocator and allLabelsLocator found", index);
-        if (allLabels() != null) {
-            selectFromList(allLabels().getWebElements(), index);
-            return;
-        }
-        if (getLocator().toString().contains("%s")) {
-            new Clickable(WebDriverByUtils.fillByTemplate(getLocator(), index)).click();
-            return;
-        }
+            throw exception("Can't find option '%s'. No optionsNamesLocator and allLabelsLocator found", num);
+        if (allLabels() != null)
+            return selectFromList(allLabels().avatar.searchAll().getElements(), num);
+        if (getLocator().toString().contains("%s"))
+            return new GetElementType(fillByTemplate(getLocator(), num), this).get(Clickable.class);
         List<WebElement> elements = getAvatar().searchAll().getElements();
         WebElement element = elements.get(0);
         if (elements.size() == 1 && element.getTagName().equals("select"))
             if (getSelector().getOptions().size() > 0) {
-                getSelector().selectByIndex(index);
-                return;
+                getSelector().selectByIndex(num - 1);
+                return null;
             }
             else throw exception("<select> tag has no <option> tags. Please Clarify element locator (%s)", this);
         if (elements.size() == 1 && element.getTagName().equals("ul"))
             elements = element.findElements(By.tagName("li"));
-        selectFromList(elements, index);
+        return selectFromList(elements, num);
     }
 
-    private void selectFromList(List<WebElement> els, int index) {
-        if (index <= 0)
-            throw exception("Can't get option with index '%s'. Index should be 1 or more", index);
+    private Clickable selectFromList(List<WebElement> els, int num) {
+        if (num <= 0)
+            throw exception("Can't get option with num '%s'. Number should be 1 or more", num);
         if (els == null)
-            throw exception("Can't find option with index '%s'. Please fix allLabelsLocator", index);
-        if (els.size() < index)
-            throw exception("Can't find option with index '%s'. Find only '%s' options", index, els.size());
-        els.get(index - 1).click();
+            throw exception("Can't find option with num '%s'. Please fix allLabelsLocator", num);
+        if (els.size() < num)
+            throw exception("Can't find option with num '%s'. Find only '%s' options", num, els.size());
+        return new Clickable(els.get(num - 1));
     }
 
     protected abstract boolean isSelectedAction(String name);
 
-    protected abstract boolean isSelectedAction(int index);
+    protected abstract boolean isSelectedAction(int num);
 
     protected boolean isSelectedAction(WebElement el) {
         if (isSelector)
@@ -137,18 +164,34 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
         return attr != null && attr.equals("true");
     }
 
+    /**
+     * @param name Specify name using string
+     * Wait while option (from text) is selected. Return false if this not happens
+     */
     public final void waitSelected(String name) {
         actions.isSelected(name, n -> waitCondition(() -> isSelectedAction(n)));
     }
 
+    /**
+     * @param name Specify name using enum
+     * Wait while option (from enum) is selected. Return false if this not happens
+     */
     public final void waitSelected(TEnum name) {
         waitSelected(getEnumValue(name));
     }
 
+    /**
+     * @param name Specify name using string
+     * @return Is option selected?
+     */
     public final boolean isSelected(String name) {
         return actions.isSelected(name, this::isSelectedAction);
     }
 
+    /**
+     * @param name Specify name using enum
+     * @return Is option selected?
+     */
     public final boolean isSelected(TEnum name) {
         return isSelected(getEnumValue(name));
     }
@@ -163,15 +206,25 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
         selectAction(value);
     }
 
-    public final String getValue() {
+    /**
+     * @return Get value of Element
+     */
+    public String getValue() {
         return actions.getValue(this::getValueAction);
     }
 
-    public final void setValue(String value) {
+    /**
+     * @param value Specify element value
+     *              Set value to Element
+     */
+    public void setValue(String value) {
         actions.setValue(value, this::setValueAction);
     }
 
-    public final List<String> getOptions() {
+    /**
+     * @return Get labels of all options
+     */
+    public List<String> getOptions() {
         return getOptionsAction();
     }
 
@@ -184,10 +237,12 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
         if (!hasLocator() && allLabels() == null)
             throw exception("Can't check is element displayed or not. No optionsNamesLocator and allLabelsLocator found");
         if (allLabels() != null)
-            return allLabels().getWebElements();
+            try { return allLabels().avatar.searchAll().getElements(); }
+            catch(Exception | Error ignore) { return new ArrayList<>(); }
         if (getLocator().toString().contains("%s"))
             throw exception("Can't check is element displayed or not. Please specify allLabelsLocator or correct optionsNamesLocator (should not contain '%s')");
-        return getElementsFromTag();
+        try { return getElementsFromTag(); }
+        catch(Exception | Error ignore) { return new ArrayList<>(); }
     }
 
     public List<WebElement> getElementsFromTag() {
@@ -208,31 +263,51 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
         return elements;
     }
 
-    protected boolean isDisplayedAction(String name) {
-        return isDisplayedInList(getElements(), name);
+    public WebElement getWebElement(String name) {
+        return getElement(name).getWebElement();
     }
 
-    private boolean isDisplayedInList(List<WebElement> els, String name) {
-        WebElement element = first(els, el -> el.getText().equals(name));
+    /**
+     * @param attribute Specify attribute name using string
+     * @return Return list of attributes of Elements
+     */
+    public List<String> getAttributesList(String attribute) {
+        return getElementsFromTag().stream().map(e -> e.getAttribute(attribute)).collect(Collectors.toList());
+    }
+
+    protected boolean isDisplayedAction(String name) {
+        WebElement element;
+        try {
+            element = getWebElement(name);
+        } catch (Exception | Error ignore) {  return false; }
         return element != null && element.isDisplayed();
     }
 
-    protected boolean isDisplayedAction(int index) {
-        return isDisplayedInList(getElements(), index);
+    protected boolean isDisplayedAction(int num) {
+        setWaitTimeout(0);
+        List<WebElement> els;
+        try {
+            els = getElements();
+        } catch (Exception | Error ignore) {  return false; }
+        restoreWaitTimeout();
+        return els.size() != 0 && isDisplayedInList(getElements(), num);
     }
 
-    private boolean isDisplayedInList(List<WebElement> els, int index) {
-        if (index <= 0)
-            throw exception("Can't get option with index '%s'. Index should be 1 or more", index);
+    private boolean isDisplayedInList(List<WebElement> els, int num) {
+        if (num <= 0)
+            throw exception("Can't get option with num '%s'. Number should be 1 or more", num);
         if (els == null)
-            throw exception("Can't find option with index '%s'. Please fix allLabelsLocator", index);
-        if (els.size() < index)
-            throw exception("Can't find option with index '%s'. Find '%s' options", index, els.size());
-        return els.get(index - 1).isDisplayed();
+            throw exception("Can't find option with num '%s'. Please fix allLabelsLocator", num);
+        if (els.size() < num)
+            throw exception("Can't find option with num '%s'. Find '%s' options", num, els.size());
+        return els.get(num - 1).isDisplayed();
     }
 
     protected boolean isDisplayedAction() {
-        List<WebElement> els = actions.findImmediately(this::getElements, null);
+        List<WebElement> els;
+        try {
+            els = avatar.findImmediately(this::getElements, null);
+        } catch (Exception | Error ignore) {  return false; }
         return els != null && !els.isEmpty() && els.get(0).isDisplayed();
     }
 
@@ -247,18 +322,39 @@ abstract class BaseSelector<TEnum extends Enum> extends BaseElement implements I
         return timer().wait(() -> !isDisplayedAction());
     }
 
+    /**
+     * @return Check is Element visible
+     */
     public boolean isDisplayed() {
         return actions.isDisplayed(this::isDisplayedAction);
     }
+    public void checkIsDisplayed() {
+        asserter.isTrue(this::isDisplayed);
+    }
+    public boolean isDisplayed(String name) {
+        return actions.isDisplayed(() -> isDisplayedAction(name));
+    }
+    public boolean isDisplayed(int num) {
+        return actions.isDisplayed(() -> isDisplayedAction(num));
+    }
 
+    /**
+     * @return Check is Element hidden
+     */
     public boolean isHidden() {
         return actions.isDisplayed(() -> !isDisplayedAction());
     }
 
+    /**
+     * Waits while Element becomes visible
+     */
     public void waitDisplayed() {
         actions.waitDisplayed(this::waitDisplayedAction);
     }
 
+    /**
+     * Waits while Element becomes invisible
+     */
     public void waitVanished() {
         actions.waitVanished(() -> timer().wait(() -> !isDisplayedAction()));
     }

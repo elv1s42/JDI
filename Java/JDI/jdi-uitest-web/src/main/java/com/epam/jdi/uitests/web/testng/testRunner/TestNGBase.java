@@ -17,21 +17,21 @@ package com.epam.jdi.uitests.web.testng.testRunner;
  * along with JDI. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 import com.epam.commons.Timer;
-import com.epam.jdi.uitests.web.selenium.driver.DriverTypes;
+import com.epam.jdi.uitests.web.settings.WebSettings;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import static com.epam.commons.StringUtils.LINE_BREAK;
-import static com.epam.jdi.uitests.core.settings.JDISettings.driverFactory;
 import static com.epam.jdi.uitests.core.settings.JDISettings.logger;
+import static com.epam.jdi.uitests.web.selenium.driver.WebDriverUtils.killAllRunWebBrowsers;
 import static com.epam.jdi.uitests.web.settings.WebSettings.initFromProperties;
-import static com.epam.jdi.uitests.web.settings.WebSettings.useDriver;
-import static com.epam.jdi.uitests.web.selenium.driver.WebDriverUtils.killAllRunWebDrivers;
 
 /**
  * Created by Roman_Iovlev on 9/3/2015.
@@ -44,20 +44,24 @@ public class TestNGBase {
     }
 
     @BeforeSuite(alwaysRun = true)
-    public static void jdiSetUp() throws Exception {
+    public static void jdiSetUp() throws IOException {
         initFromProperties();
         logger.info("Init test run");
-
-        killAllRunWebDrivers();
-        if (!driverFactory.hasDrivers())
-            useDriver(DriverTypes.CHROME);
+        if (WebSettings.killBrowser.toLowerCase().contains("before"))
+            killAllRunWebBrowsers();
         timer = new Timer();
     }
 
     @AfterSuite(alwaysRun = true)
-    public static void jdiTearDown() {
-        logger.info("Test run finished. " + LINE_BREAK + "Total test run time: "
-                + new SimpleDateFormat("HH:mm:ss.S").format(new Date(21 * 3600000 + getTestRunTime())));
-        killAllRunWebDrivers();
+    public static void jdiTearDown() throws IOException {
+        LocalDateTime date = Instant.ofEpochMilli(21 * 3600000 + getTestRunTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        String formattedTime = DateTimeFormatter.ofPattern("HH:mm:ss.S").format(date);
+
+        logger.info("Test run finished. " + LINE_BREAK + "Total test run time: " + formattedTime);
+
+        if (WebSettings.killBrowser.toLowerCase().contains("after"))
+            killAllRunWebBrowsers();
     }
 }

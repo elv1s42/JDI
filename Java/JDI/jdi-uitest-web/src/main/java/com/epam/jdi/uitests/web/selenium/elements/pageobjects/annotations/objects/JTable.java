@@ -18,12 +18,15 @@ package com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objec
  */
 
 
-import org.openqa.selenium.By;
+import com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.JFindBy;
 import org.openqa.selenium.support.FindBy;
 
-import java.lang.annotation.*;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.TableHeaderTypes.COLUMN_HEADERS;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.TableHeaderTypes.COLUMNS_HEADERS;
 
 /**
  * Created by roman.i on 06.10.2014.
@@ -31,24 +34,34 @@ import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.FIELD})
 public @interface JTable {
-    FindBy root() default @FindBy();
-    String[] header() default {};
+    FindBy root()       default @FindBy();
+    JFindBy jRoot()     default @JFindBy();
+    String[] header()   default {};
     String[] rowsHeader() default {};
 
-    FindBy cell() default @FindBy();
-    FindBy row() default @FindBy();
-    FindBy column() default @FindBy();
-    FindBy footer() default @FindBy();
+    FindBy headers()    default @FindBy();
+    FindBy rowNames()   default @FindBy();
+    FindBy cell()       default @FindBy();
+    FindBy row()        default @FindBy();
+    FindBy column()     default @FindBy();
+    FindBy footer()     default @FindBy();
 
-    int height() default -1;
-    int width() default -1;
-    String size() default "";
+    JFindBy jHeaders()  default @JFindBy();
+    JFindBy jRowNames() default @JFindBy();
+    JFindBy jCell()     default @JFindBy();
+    JFindBy jRow()      default @JFindBy();
+    JFindBy jColumn()   default @JFindBy();
+    JFindBy jFooter()   default @JFindBy();
 
-    int rowStartIndex() default -1;
-    int colStartIndex() default -1;
+    int height()    default -1;
+    int width()     default -1;
+    String size()   default "";
 
-    TableHeaderTypes headerType() default COLUMN_HEADERS;
-    boolean useCache() default true;
+    int rowStartIndex() default 1;
+    int colStartIndex() default 1;
+
+    TableHeaderTypes headerType() default COLUMNS_HEADERS;
+    boolean useCache()  default false;
 
 
 }

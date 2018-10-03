@@ -20,9 +20,10 @@ package com.epam.jdi.uitests.core.interfaces;
 
 import com.epam.jdi.uitests.core.preconditions.IPreconditions;
 import com.epam.jdi.uitests.core.preconditions.PreconditionsState;
-import com.epam.jdi.uitests.core.settings.JDISettings;
 
 import java.lang.reflect.Method;
+
+import static com.epam.jdi.uitests.core.settings.JDISettings.driverFactory;
 
 /**
  * Created by Roman_Iovlev on 8/30/2015.
@@ -34,11 +35,11 @@ public class Application {
     public void setDriverName(String driverName) { this.driverName = driverName; }
 
     public synchronized void isInState(IPreconditions precondition) {
-        JDISettings.driverFactory.setCurrentDriver(driverName);
+        driverFactory.setCurrentDriver(driverName);
         PreconditionsState.isInState(precondition);
     }
     public synchronized void isInState(IPreconditions precondition, Method method) {
-        JDISettings.driverFactory.setCurrentDriver(driverName);
+        driverFactory.setCurrentDriver(driverName);
         PreconditionsState.isInState(precondition, method);
     }
 

@@ -3,18 +3,19 @@ package com.epam.jdi.uitests.testing.unittests.tests.common;
 import com.epam.jdi.uitests.testing.unittests.InitTests;
 import com.epam.jdi.uitests.testing.unittests.tests.common.dataProviders.CheckBoxDP;
 import com.epam.jdi.uitests.web.selenium.elements.common.CheckBox;
+import com.epam.web.matcher.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 
+import static com.codeborne.selenide.Condition.checked;
+import static com.codeborne.selenide.Condition.exactText;
+import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.METALS_AND_COLORS_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.pageobjects.EpamJDISite.metalsColorsPage;
 import static com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData.checkAction;
-import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 /**
  * Created by Dmitry_Lebedev1 on 15/12/2015.
@@ -40,14 +41,14 @@ public class CheckboxTests extends InitTests {
     public void uncheckSingleTest() throws InterruptedException {
         checkBox().click();
         checkBox().uncheck();
-        checkAction("Water: condition changed to false");
+        checkAction("");
     }
 
     @Test
     public void isCheckTest() throws Exception {
-        assertFalse(checkBox().isChecked());
+        Assert.isFalse(checkBox().isChecked());
         checkBox().click();
-        assertTrue(checkBox().isChecked());
+        Assert.isTrue(checkBox().isChecked());
     }
 
     @Test
@@ -90,5 +91,16 @@ public class CheckboxTests extends InitTests {
         checkBox().click();
         checkBox().setValue(input);
         checkAction("Water: condition changed to false");
+    }
+
+    @Test
+    public void imageIsDisplayedTest(){
+        Assert.assertTrue(checkBox().isDisplayed());
+    }
+
+    @Test
+    public void shouldTest(){
+        checkBox().shouldNotBe(checked)
+                .shouldHave(exactText("Water"));
     }
 }

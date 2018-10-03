@@ -5,59 +5,64 @@
     <parent>
         <artifactId>jdi-uitest-framework</artifactId>
         <groupId>com.epam.jdi</groupId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.1.0</version>
         <relativePath>../..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>jdi-uitest-mobile</artifactId>
+    <name>EPAM JDI UI Testing Mobile</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <selenium.version>2.45.0</selenium.version>
-        <testng.version>6.8.1</testng.version>
-        <log4j.version>1.2.17</log4j.version>
-        <saucelab.version>2.1.19</saucelab.version>
-        <junit.version>4.11</junit.version>
-        <jdi.version>1.0.3-SNAPSHOT</jdi.version>
-        <appium.version>3.3.0</appium.version>
-    </properties>
+    <scm>
+        <connection>scm:https://github.com/epam/JDI</connection>
+        <developerConnection>scm:https://github.com/epam/JDI</developerConnection>
+        <url>https://github.com/epam/JDI</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>engineer</id>
+            <name>Roman Iovlev</name>
+            <email>roman_iovlev@epam.com</email>
+            <timezone>UTC+3</timezone>
+        </developer>
+    </developers>
+    <artifactId>jdi-uitest-mobile</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.saucelabs</groupId>
             <artifactId>sauce_junit</artifactId>
-            <version>${saucelab.version}</version>
+            <version>RELEASE</version>
         </dependency>
         <dependency>
             <groupId>com.epam.jdi</groupId>
             <artifactId>jdi-uitest-core</artifactId>
-            <version>${jdi.version}</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>com.epam.jdi</groupId>
             <artifactId>jdi-matchers</artifactId>
-            <version>${jdi.version}</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>${testng.version}</version>
+            <version>6.11</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
+            <version>RELEASE</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <version>RELEASE</version>
         </dependency>
         <dependency>
             <groupId>io.appium</groupId>
             <artifactId>java-client</artifactId>
-            <version>${appium.version}</version>
+            <version>RELEASE</version>
         </dependency>
     </dependencies>
 

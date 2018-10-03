@@ -6,8 +6,9 @@ import io.appium.java_client.android.AndroidDriver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import static com.epam.jdi.uitests.core.settings.JDISettings.*;
-import static com.epam.jdi.uitests.mobile.appium.elements.composite.Site.init;
+import static com.epam.jdi.uitests.core.settings.JDISettings.driverFactory;
+import static com.epam.jdi.uitests.core.settings.JDISettings.logger;
+import static com.epam.jdi.uitests.mobile.appium.elements.composite.Application.init;
 
 
 /**

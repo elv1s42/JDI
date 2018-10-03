@@ -18,24 +18,33 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
  */
 
 
+import com.epam.jdi.uitests.core.interfaces.base.ISetup;
 import com.epam.jdi.uitests.core.interfaces.complex.IDropDown;
 import com.epam.jdi.uitests.web.selenium.elements.GetElementType;
+import com.epam.jdi.uitests.web.selenium.elements.base.Clickable;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import com.epam.jdi.uitests.web.selenium.elements.common.Label;
+import com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.JDropdown;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.function.Function;
+
+import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.WebAnnotationsUtil.findByToBy;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.FillFromAnnotationRules.fieldHasAnnotation;
 
 /**
  * RadioButtons control implementation
  *
  * @author Alexeenko Yan
  */
-public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDropDown<TEnum> {
-    private GetElementType element = new GetElementType();
+public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDropDown<TEnum>, ISetup {
+    protected GetElementType element;
+    protected GetElementType expander;
 
     public Dropdown() {
         super();
@@ -51,36 +60,85 @@ public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDr
 
     public Dropdown(By selectLocator, By optionsNamesLocator, By allOptionsNamesLocator) {
         super(optionsNamesLocator, allOptionsNamesLocator);
-        this.element = new GetElementType(selectLocator);
+        element = new GetElementType(selectLocator, getParent());
+        expander = new GetElementType(selectLocator, getParent());
+    }
+
+    public void setup(Field field) {
+        if (!fieldHasAnnotation(field, JDropdown.class, IDropDown.class))
+            return;
+        JDropdown jDropdown = field.getAnnotation(JDropdown.class);
+
+        By root = findByToBy(jDropdown.root());
+        By value = findByToBy(jDropdown.value());
+        By list = findByToBy(jDropdown.list());
+        By expand = findByToBy(jDropdown.expand());
+        if (root == null)
+            root = findByToBy(jDropdown.jroot());
+        if (value == null)
+            value = findByToBy(jDropdown.jvalue());
+        if (list == null)
+            list = findByToBy(jDropdown.jlist());
+        if (expand == null)
+            expand = findByToBy(jDropdown.jexpand());
+
+        if (root != null)
+            setLocator(root);
+        if (value != null) {
+            this.element = new GetElementType(value, this);
+            if (expander == null) this.expander = element;
+        }
+        if (list != null)
+            this.allLabels = new GetElementType(list, this);
+        if (expand != null) {
+            this.expander = new GetElementType(expand, this);
+            if (element == null) this.element = expander;
+        }
     }
 
     protected Label element() {
-        return element.get(new Label(), getAvatar());
+        if (element == null)
+            return getLocator() != null
+                ? new GetElementType(getLocator(), getParent()).get(Label.class)
+                : null;
+        return element.get(Label.class);
+    }
+    protected Clickable expander() {
+        if (expander == null) {
+            if (getLocator() != null)
+                return new GetElementType(getLocator(), getParent()).get(Label.class);
+            throw exception("'Expand' element for dropdown not defined");
+        }
+        return expander.get(Label.class);
     }
 
     protected void expandAction(String name) {
-        getAvatar().context.clear();
         if (element().isDisplayed()) {
             setWaitTimeout(0);
             if (!isDisplayedAction(name))
-                element().click();
+                restoreWaitTimeout();
+                timer().wait(() -> {
+                    expander().click();
+                    return timer(1).wait(() -> isDisplayedAction(name));
+                });
             restoreWaitTimeout();
         }
     }
 
     protected void expandAction(int index) {
-        getAvatar().context.clear();
-        if (!isDisplayedAction(index))
+        if (!this.allLabels.hasLocator() || !isDisplayedAction(index))
             element().click();
     }
 
     @Override
     protected void selectAction(String name) {
-        if (element() != null) {
-            expandAction(name);
-            super.selectAction(name);
-        } else
-            new Select(getWebElement()).selectByVisibleText(name);
+        if (element().getLocator().toString().contains("select"))
+            try {
+                new Select(element().getWebElement()).selectByVisibleText(name);
+                return;
+            } catch (Exception ignore) { }
+        expandAction(name);
+        super.selectAction(name);
     }
 
     @Override
@@ -93,6 +151,17 @@ public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDr
     }
 
     @Override
+    protected boolean isDisplayedAction(String name) {
+        WebElement element;
+        try {
+            element = allLabels.get(TextList.class).getElement(name);
+        } catch (Exception | Error ex) {
+            return true;
+        }
+        return element != null && element.isDisplayed();
+    }
+
+    @Override
     protected String getValueAction() {
         return getTextAction();
     }
@@ -102,11 +171,17 @@ public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDr
         return getTextAction();
     }
 
+    /**
+     * Waits while Element becomes visible
+     */
     @Override
     public void waitDisplayed() {
         element().waitDisplayed();
     }
 
+    /**
+     * Waits while Element becomes invisible
+     */
     @Override
     public void waitVanished() {
         element().waitVanished();
@@ -116,15 +191,19 @@ public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDr
         element().wait(resultFunc);
     }
 
-    public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition) {
-        return element().wait(resultFunc, condition);
+    public <R> R wait(Function<WebElement, R> resultFunc, Function<R, Boolean> condition) {
+        return  element().wait(resultFunc, condition);
+    }
+
+    public <R> R test(Function<WebElement, R> resultFunc, Function<R, Boolean> condition) {
+        return resultFunc.apply(getWebElement());
     }
 
     public void wait(Function<WebElement, Boolean> resultFunc, int timeoutSec) {
         element().wait(resultFunc, timeoutSec);
     }
 
-    public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition, int timeoutSec) {
+    public <R> R wait(Function<WebElement, R> resultFunc, Function<R, Boolean> condition, int timeoutSec) {
         return element().wait(resultFunc, condition, timeoutSec);
     }
 
@@ -142,45 +221,87 @@ public class Dropdown<TEnum extends Enum> extends Selector<TEnum> implements IDr
     }
 
     protected String getTextAction() {
-        return element().getText();
+        String result = "";
+        if (element().getLocator().toString().contains("select")) try {
+            result = new Select(element().getWebElement()).getFirstSelectedOption().getText();
+        } catch (Exception ignore) {}
+        return result != null && !result.equals("")
+            ? result
+            : element().getText();
     }
 
+    /**
+     * Expanding DropDown
+     */
     public final void expand() {
-        if (!isDisplayedAction(1)) element().click();
+        actions.expand(() -> expandAction(1));
+    }
+    public final void expand(String name) {
+        actions.expand(() -> expandAction(name));
+    }
+    public final void expand(int index) {
+        actions.expand(() -> expandAction(index));
     }
 
+    /**
+     * Closing DropDown
+     */
     public final void close() {
         if (isDisplayedAction(1)) element().click();
     }
 
+    /**
+     * Click on Element
+     */
     public final void click() {
         actions.click(this::clickAction);
     }
 
+    /**
+     * @return Get Element’s text
+     */
     public final String getText() {
         return actions.getText(this::getTextAction);
     }
 
+    /**
+     * @param text Specify expected text
+     * @return Wait while Element’s text contains expected text. Returns Element’s text
+     */
     public final String waitText(String text) {
         return actions.waitText(text, this::getTextAction);
     }
 
+    /**
+     * @param regEx Specify expected regular expression Text
+     * @return Wait while Element’s text matches regEx. Returns Element’s text
+     */
     public final String waitMatchText(String regEx) {
         return actions.waitMatchText(regEx, this::getTextAction);
     }
 
+    /**
+     * @param attributeName Specify attribute name
+     * @param value         Specify attribute value
+     *                      Sets attribute value for Element
+     */
     public void setAttribute(String attributeName, String value) {
         element().setAttribute(attributeName, value);
     }
 
     public WebElement getWebElement() {
-        return new Element(getLocator()).getWebElement();
+        return new GetElementType(getLocator(), this).get(Element.class).getWebElement();
     }
 
     public String getAttribute(String name) {
         return element().getAttribute(name);
     }
 
+    /**
+     * @param name  Specify attribute name
+     * @param value Specify attribute value
+     * Waits while attribute gets expected value. Return false if this not happens
+     */
     public void waitAttribute(String name, String value) {
         element().waitAttribute(name, value);
     }

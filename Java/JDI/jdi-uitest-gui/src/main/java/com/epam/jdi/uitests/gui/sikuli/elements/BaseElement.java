@@ -1,9 +1,9 @@
 package com.epam.jdi.uitests.gui.sikuli.elements;
 
+import com.codeborne.selenide.Condition;
 import com.epam.commons.Timer;
 import com.epam.jdi.uitests.core.annotations.functions.Functions;
 import com.epam.jdi.uitests.core.interfaces.base.IBaseElement;
-import com.epam.jdi.uitests.core.interfaces.base.IComposite;
 import com.epam.jdi.uitests.core.interfaces.base.IElement;
 import com.epam.jdi.uitests.core.logger.LogLevels;
 import com.epam.jdi.uitests.gui.sikuli.elements.actions.ActionInvoker;
@@ -14,14 +14,12 @@ import com.epam.jdi.uitests.gui.sikuli.elements.base.Element;
 import com.epam.jdi.uitests.gui.sikuli.elements.pageobjects.annotations.GuiAnnotationsUtil;
 import org.sikuli.script.Pattern;
 import org.sikuli.script.Region;
-import org.sikuli.script.Screen;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 
-import java.awt.Rectangle;
-
-import static com.epam.commons.ReflectionUtils.isInterface;
 import static com.epam.jdi.uitests.core.logger.LogLevels.INFO;
 import static com.epam.jdi.uitests.core.settings.JDISettings.shortLogMessagesFormat;
 import static com.epam.jdi.uitests.core.settings.JDISettings.toLog;
@@ -47,11 +45,9 @@ public abstract class BaseElement implements IBaseElement {
     public BaseElement() {
         this(null);
     }
+
     public BaseElement(Pattern pattern) {
-        avatar = new GetElementModule(pattern, this);
-        if (isInterface(getClass(), IComposite.class) && !createFreeInstance && CascadeInit.firstInstance)
-            CascadeInit.initElements(this, avatar.getDriverName());
-        MapInterfaceToElement.init(seleniumDefaultMap());
+        avatar = new GetElementModule(pattern == null ? null : pattern, this);
     }
 
     private static Object[][] seleniumDefaultMap() {
@@ -77,6 +73,9 @@ public abstract class BaseElement implements IBaseElement {
         this.typeName = typeName;
     }
 
+    /**
+     * @return Get Element’s name
+     */
     public String getName() {
         return  this.name;
     }
@@ -94,6 +93,9 @@ public abstract class BaseElement implements IBaseElement {
     public Pattern getPattern() {
         return avatar.pattern;
     }
+    public String printContext() {
+        return "NOT IMPLEMENTED";
+    }
 
     public Rectangle getRectangle() {
         return this.avatar.getRectangle();
@@ -103,7 +105,7 @@ public abstract class BaseElement implements IBaseElement {
         Rectangle parentRectangle = ((BaseElement)this.parent).getRectangle();
 
         if (parentRectangle == null || parentRectangle.getHeight() == 0 || parentRectangle.getWidth() == 0)
-            return new Screen();
+            return getParentRegion();
 
         return new Region(parentRectangle);
     }
@@ -118,4 +120,24 @@ public abstract class BaseElement implements IBaseElement {
     protected Timer timer() {
         return avatar.timer();
     }
+
+    public IBaseElement should(Condition... conditions){
+        throw new NotImplementedException();
+    }
+    public IBaseElement shouldHave(Condition... conditions){
+        return should(conditions);
+    }
+    public IBaseElement shouldBe(Condition... conditions){
+        return should(conditions);
+    }
+    public IBaseElement shouldNot(Condition... conditions){
+        throw new NotImplementedException();
+    }
+    public IBaseElement shouldNotHave(Condition... conditions){
+        return shouldNot(conditions);
+    }
+    public IBaseElement shouldNotBe(Condition... conditions){
+        return shouldNot(conditions);
+    }
+
 }

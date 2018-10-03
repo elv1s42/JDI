@@ -18,7 +18,7 @@ package com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations;
  */
 
 
-import com.epam.jdi.uitests.web.selenium.elements.composite.CheckPageTypes;
+import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.CheckPageTypes;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,16 +31,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.FIELD})
 public @interface JPage {
+    String value() default "";
     String url() default "";
-
     String title() default "";
-
     String urlTemplate() default "";
-
-    CheckPageTypes checkType() default CheckPageTypes.EQUAL;
-
     CheckPageTypes urlCheckType() default CheckPageTypes.EQUAL;
-
     CheckPageTypes titleCheckType() default CheckPageTypes.EQUAL;
 
 }

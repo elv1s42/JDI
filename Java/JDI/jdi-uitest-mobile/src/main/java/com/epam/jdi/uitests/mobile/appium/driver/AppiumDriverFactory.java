@@ -20,6 +20,7 @@ package com.epam.jdi.uitests.mobile.appium.driver;
 
 import com.epam.commons.PropertyReader;
 import com.epam.commons.TryCatchUtil;
+import com.epam.commons.linqinterfaces.JFuncTREx;
 import com.epam.commons.map.MapArray;
 import com.epam.jdi.uitests.core.interfaces.base.IElement;
 import com.epam.jdi.uitests.core.interfaces.settings.IDriver;
@@ -35,7 +36,6 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import java.io.File;
 import java.net.URL;
 import java.util.Properties;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.epam.commons.StringUtils.LINE_BREAK;
@@ -51,8 +51,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Created by Roman_Iovlev on 6/10/2015.
  */
 public class AppiumDriverFactory implements IDriver<WebDriver> {
-    public Function<WebElement, Boolean> elementSearchCriteria = WebElement::isDisplayed;
+    public JFuncTREx<WebElement, Boolean> elementSearchCriteria = WebElement::isDisplayed;
+    public static boolean onlyOneElementAllowedInSearch = true;
     public RunTypes runType = LOCAL;
+    public String remoteHubUrl;
     public String currentDriverName = "";
     public boolean isDemoMode = false;
     public HighlightSettings highlightSettings = new HighlightSettings();
@@ -65,7 +67,7 @@ public class AppiumDriverFactory implements IDriver<WebDriver> {
     }
 
     public AppiumDriverFactory(boolean isDemoMode, HighlightSettings highlightSettings,
-                               Function<WebElement, Boolean> elementSearchCriteria) {
+                               JFuncTREx<WebElement, Boolean> elementSearchCriteria) {
         this.isDemoMode = isDemoMode;
         this.highlightSettings = highlightSettings;
         this.elementSearchCriteria = elementSearchCriteria;
@@ -106,6 +108,9 @@ public class AppiumDriverFactory implements IDriver<WebDriver> {
                 this.runType = RunTypes.REMOTE;
                 break;
         }
+    }
+    public void setRemoteHubUrl(String url) {
+        remoteHubUrl = url;
     }
 
     private String getDriversPath() {
@@ -191,8 +196,7 @@ public class AppiumDriverFactory implements IDriver<WebDriver> {
             runDrivers.add(driverName, resultDriver);
             if (resultDriver == null)
                 throw exception("Can't get Webdriver '%s'. This Driver name not registered", driverName);
-            resultDriver.manage().window().maximize();
-            resultDriver.manage().timeouts().implicitlyWait(timeouts.waitElementSec, SECONDS);
+            resultDriver.manage().timeouts().implicitlyWait(timeouts.getCurrentTimeoutSec(), SECONDS);
             return resultDriver;
         } catch (Exception ex) {
             throw exception("Can't get driver");

@@ -20,8 +20,16 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
 
 import com.epam.jdi.uitests.core.interfaces.complex.IComboBox;
 import com.epam.jdi.uitests.web.selenium.elements.GetElementType;
+import com.epam.jdi.uitests.web.selenium.elements.common.Label;
 import com.epam.jdi.uitests.web.selenium.elements.common.TextField;
+import com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.JComboBox;
 import org.openqa.selenium.By;
+
+import java.lang.reflect.Field;
+
+import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.WebAnnotationsUtil.findByToBy;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.FillFromAnnotationRules.fieldHasAnnotation;
 
 /**
  * ComboBox control implementation
@@ -29,6 +37,7 @@ import org.openqa.selenium.By;
  * @author Alexeenko Yan
  */
 public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements IComboBox<TEnum> {
+    public By labelLocator;
     private GetElementType textField = new GetElementType();
 
     public ComboBox() {
@@ -37,26 +46,61 @@ public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements ICo
 
     public ComboBox(By valueLocator) {
         super(valueLocator);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, getParent());
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate) {
         super(selectorLocator, optionsNamesLocatorTemplate);
-        textField = new GetElementType(selectorLocator);
+        textField = new GetElementType(selectorLocator, getParent());
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate, By valueLocator) {
         super(selectorLocator, optionsNamesLocatorTemplate);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, getParent());
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate, By valueLocator, By allOptionsNamesLocator) {
         super(selectorLocator, optionsNamesLocatorTemplate, allOptionsNamesLocator);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, getParent());
+    }
+
+    public String label() {
+        if (labelLocator == null)
+            throw exception("Label locator no specified");
+        Label label = new Label(labelLocator);
+        label.setParent(getParent());
+        return label.getText();
+    }
+
+    public void setup(Field field) {
+        if (!fieldHasAnnotation(field, JComboBox.class, IComboBox.class))
+            return;
+        JComboBox jComboBox = field.getAnnotation(JComboBox.class);
+        By root = findByToBy(jComboBox.root());
+        By value = findByToBy(jComboBox.value());
+        By list = findByToBy(jComboBox.list());
+        By expand = findByToBy(jComboBox.expand());
+
+        if (root != null)
+            setLocator(root);
+        if (value != null) {
+            this.element = new GetElementType(value, this);
+            if (expander == null){
+                this.expander = element;
+            }
+            textField = new GetElementType(value, this);
+        }
+        if (list != null)
+            this.allLabels = new GetElementType(list, this);
+        if (expand != null) {
+            this.expander = new GetElementType(expand, this);
+            if (element == null)
+                this.element = expander;
+        }
     }
 
     protected TextField textField() {
-        return textField.get(new TextField(), getAvatar());
+        return textField.get(TextField.class);
     }
 
     @Override
@@ -81,23 +125,41 @@ public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements ICo
         textField().focus();
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Input text in textfield
+     */
     public final void input(CharSequence text) {
         actions.input(text, this::inputAction);
     }
 
+    /**
+     * @param text Specify text to send keys to TextField
+     *             Input text in textfield
+     */
     public void sendKeys(CharSequence text) {
         input(text);
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Clear and input text in textfield
+     */
     public void newInput(CharSequence text) {
         clear();
         input(text);
     }
 
+    /**
+     * Clear textfield
+     */
     public final void clear() {
         actions.clear(this::clearAction);
     }
 
+    /**
+     * Focus(click) on textfield
+     */
     public final void focus() {
         actions.focus(this::focusAction);
     }

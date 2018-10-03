@@ -10,22 +10,20 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static com.epam.jdi.uitests.testing.unittests.enums.Metals.Col;
+import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.jdi.uitests.testing.unittests.enums.Metals.Gold;
+import static com.epam.jdi.uitests.testing.unittests.enums.Metals.Metals;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.METALS_AND_COLORS_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.pageobjects.EpamJDISite.metalsColorsPage;
 import static com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData.*;
-import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
-import static com.epam.web.matcher.junit.Assert.exception;
-import static com.epam.web.matcher.testng.Assert.areEquals;
-import static com.epam.web.matcher.testng.Assert.listEquals;
+import static com.epam.web.matcher.testng.Assert.*;
 import static java.util.Arrays.asList;
 
 /**
  * Created by Roman_Iovlev on 9/15/2015.
  */
 public class ComboBoxTests extends InitTests {
-    private static final List<String> oddOptions = asList("Col", "Gold", "Silver", "Bronze", "Selen");
+    private static final List<String> oddOptions = asList("Metals", "Gold", "Silver", "Bronze", "Selen");
 
     private IComboBox<Metals> metals() {
         return metalsColorsPage.comboBox;
@@ -71,7 +69,7 @@ public class ComboBoxTests extends InitTests {
 
     @Test
     public void getOptionsAsTextTest() {
-        areEquals(metals().getOptionsAsText(), "Col, Gold, Silver, Bronze, Selen");
+        areEquals(metals().getOptionsAsText(), "Metals, Gold, Silver, Bronze, Selen");
     }
 
     @Test
@@ -81,7 +79,6 @@ public class ComboBoxTests extends InitTests {
         checkAction("Metals: value changed to Blue");
     }
 
-    // Fails
     @Test
     public void getSelectedTest() {
         metals().select("Gold");
@@ -95,18 +92,18 @@ public class ComboBoxTests extends InitTests {
 
     @Test
     public void isSelectedTest() {
-        areEquals(metals().isSelected("Col"), true);
+        areEquals(metals().isSelected("Metals"), true);
     }
 
     @Test
     public void isSelectedEnumTest() {
-        areEquals(metals().isSelected(Col), true);
+        areEquals(metals().isSelected(Metals), true);
     }
 
     @Test
     public void waitSelectedTest() {
         try {
-            metals().waitSelected("Col");
+            metals().waitSelected("Metals");
         } catch (Exception ex) {
             throw exception("WaitSelected throws exception");
         }
@@ -115,11 +112,11 @@ public class ComboBoxTests extends InitTests {
     @Test
     public void waitSelectedEnumTest() {
         new Check("WaitSelected")
-            .hasNoExceptions(() -> metals().waitSelected(Col));
+            .hasNoExceptions(() -> metals().waitSelected(Metals));
     }
 
     @Test
     public void getValueTest() {
-        areEquals(metals().getValue(), "Col");
+        areEquals(metals().getValue(), "Metals");
     }
 }

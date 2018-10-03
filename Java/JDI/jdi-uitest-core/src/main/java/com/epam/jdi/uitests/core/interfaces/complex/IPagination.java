@@ -17,42 +17,43 @@ package com.epam.jdi.uitests.core.interfaces.complex;
  * along with JDI. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.epam.jdi.uitests.core.annotations.JDIAction;
 import com.epam.jdi.uitests.core.interfaces.base.IBaseElement;
 import com.epam.jdi.uitests.core.interfaces.base.IComposite;
+import com.epam.jdi.uitests.core.interfaces.base.IVisible;
+import ru.yandex.qatools.allure.annotations.Step;
 
 /**
  * Created by Roman_Iovlev on 7/29/2015.
  */
-public interface IPagination extends IBaseElement, IComposite {
+public interface IPagination extends IBaseElement, IComposite, IVisible {
     /**
      * Choose Next page
      */
-    @JDIAction
+    @Step
     void next();
 
     /**
      * Choose Previous page
      */
-    @JDIAction
+    @Step
     void previous();
 
     /**
-     * hoose First page
+     * Choose First page
      */
-    @JDIAction
+    @Step
     void first();
 
     /**
      * Choose Last page
      */
-    @JDIAction
+    @Step
     void last();
 
     /**
      * @param index Specify page index
      *              Choose page by index
      */
-    @JDIAction
+    @Step
     void selectPage(int index);
 }

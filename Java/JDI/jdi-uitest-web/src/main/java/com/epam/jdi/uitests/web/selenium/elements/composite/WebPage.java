@@ -19,16 +19,18 @@ package com.epam.jdi.uitests.web.selenium.elements.composite;
 
 
 import com.epam.commons.Timer;
-import com.epam.jdi.uitests.core.annotations.JDIAction;
+import com.epam.commons.map.MapArray;
 import com.epam.jdi.uitests.core.interfaces.complex.IPage;
-import com.epam.jdi.uitests.web.selenium.elements.BaseElement;
+import com.epam.jdi.uitests.core.interfaces.complex.tables.interfaces.CheckPageTypes;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
 import com.epam.jdi.uitests.web.settings.WebSettings;
 import org.openqa.selenium.Cookie;
+import ru.yandex.qatools.allure.annotations.Step;
 
+import java.text.MessageFormat;
 import java.util.function.Supplier;
 
 import static com.epam.jdi.uitests.core.settings.JDISettings.*;
-import static com.epam.jdi.uitests.web.settings.WebSettings.domain;
 import static java.lang.String.format;
 
 /**
@@ -38,13 +40,12 @@ public class WebPage extends BaseElement implements IPage {
     public static boolean checkAfterOpen = false;
     public String url;
     public String title;
-    protected CheckPageTypes checkUrlType = CheckPageTypes.EQUAL;
-    protected CheckPageTypes checkTitleType = CheckPageTypes.EQUAL;
-    protected String urlTemplate;
+    public CheckPageTypes checkUrlType = CheckPageTypes.EQUAL;
+    public CheckPageTypes checkTitleType = CheckPageTypes.EQUAL;
+    public String urlTemplate;
     public static WebPage currentPage;
 
-    public WebPage() {
-    }
+    public WebPage() { }
 
     public WebPage(String url) {
         this.url = url;
@@ -53,14 +54,6 @@ public class WebPage extends BaseElement implements IPage {
     public WebPage(String url, String title) {
         this.url = url;
         this.title = title;
-    }
-
-    public static String getUrlFromUri(String uri) {
-        return domain.replaceAll("/*$", "") + "/" + uri.replaceAll("^/*", "");
-    }
-
-    public static String getMatchFromDomain(String uri) {
-        return domain.replaceAll("/*$", "").replace(".", "\\.") + "/" + uri.replaceAll("^/*", "");
     }
 
     public static void openUrl(String url) {
@@ -93,63 +86,116 @@ public class WebPage extends BaseElement implements IPage {
         return new StringCheckType(getDriver()::getTitle, title, title, "title", timer());
     }
 
-    public void checkOpened() {
-        switch (checkUrlType) {
-            case EQUAL:
-                url().check();
-                break;
-            case MATCH:
-                url().match();
-                break;
-            case CONTAIN:
-                url().contains();
-                break;
-        }
-        switch (checkTitleType) {
-            case EQUAL:
-                title().check();
-                break;
-            case MATCH:
-                title().match();
-                break;
-            case CONTAIN:
-                title().contains();
-                break;
-        }
+    /**
+     * Check that page opened
+     */
+    public void checkOpened(CheckPageTypes checkUrlType, CheckPageTypes checkTitleType) {
+        logger.step(format("I check '%s' is opened", getName()));
+        logger.logOff(() ->
+            asserter.isTrue(() -> verifyOpened(checkUrlType, checkTitleType),
+                    format("Page '%s' is not opened (url:%s, title:%s)", toString(), getUrl(), getTitle())));
     }
 
+    /**
+     * Check that page opened
+     */
+    public void checkOpened() {
+        checkOpened(checkUrlType, checkTitleType);
+    }
+    /**
+     * Check that page opened
+     */
+    public void checkOpened(CheckPageTypes checkType) {
+        checkOpened(checkType, checkType);
+    }
+
+    public boolean verifyOpened(CheckPageTypes checkUrlType, CheckPageTypes checkTitleType) {
+        boolean result = false;
+        switch (checkUrlType) {
+            case EQUAL:
+                result = url().check(); break;
+            case MATCH:
+                result = url().match(); break;
+            case CONTAINS:
+                result = url().contains(); break;
+        }
+        if (!result)
+            return false;
+        switch (checkTitleType) {
+            case EQUAL:
+                return title().check();
+            case MATCH:
+                return title().match();
+            case CONTAINS:
+                return title().contains();
+        }
+        return false;
+    }
+    public boolean verifyOpened(CheckPageTypes checkType) {
+        return verifyOpened(checkType, checkType);
+    }
+    public boolean verifyOpened() {
+        return verifyOpened(checkUrlType, checkTitleType);
+    }
+
+    /**
+     * Opens url specified for page
+     */
     public <T extends IPage> T open() {
-        invoker.doJAction(format("Open page %s by url %s", getName(), url),
-                () -> getDriver().navigate().to(url));
+        return open(null);
+    }
+    public <T extends IPage> T open(Object... params) {
+        String urlWithParams = params == null || params.length == 0
+            ? url
+            : url.contains("%s")
+                ? String.format(url, params)
+                : MessageFormat.format(url, params);
+        invoker.doJAction(format("Open page '%s'", getName()),
+                () -> getDriver().navigate().to(urlWithParams));
         if (checkAfterOpen)
             checkOpened();
         currentPage = this;
         return (T) this;
     }
-
+    public void shouldBeOpened() {
+        isOpened();
+    }
+    /**
+     * @deprecated  Better use more obvious {@link #shouldBeOpened()}
+     */
+    @Deprecated
     public void isOpened() {
         try {
-            logger.info("Page %s is opened", getName());
-            if (getDriver().getCurrentUrl().equals(url)) return;
+            logger.info(format("Page '%s' should be opened", getName()));
+            if (verifyOpened()) return;
             open();
+            checkOpened();
         } catch (Exception ex) {
-            throw exception(format("Can't open page %s. Reason: %s", getName(), ex.getMessage()));
+            throw exception(format("Can't open page '%s'. Reason: %s", getName(), ex.getMessage()));
         }
     }
 
     /**
      * Refresh current page
      */
-    @JDIAction
+    @Step
     public void refresh() {
-        invoker.doJAction("Refresh page " + getName(),
+        invoker.doJAction(format("Refresh page '%s", getName()),
+                () -> getDriver().navigate().refresh());
+    }
+    /**
+     * Reload current page
+     */
+    @Step
+    public void reload() {
+        invoker.doJAction(format("Reload page '%s", getName()),
                 () -> getDriver().navigate().refresh());
     }
 
     /**
      * Go back to previous page
      */
-    @JDIAction
+    @Step
     public void back() {
         invoker.doJAction("Go back to previous page",
                 () -> getDriver().navigate().back());
@@ -159,7 +205,7 @@ public class WebPage extends BaseElement implements IPage {
     /**
      * Go forward to next page
      */
-    @JDIAction
+    @Step
     public void forward() {
         invoker.doJAction("Go forward to next page",
                 () -> getDriver().navigate().forward());
@@ -169,19 +215,32 @@ public class WebPage extends BaseElement implements IPage {
      * @param cookie Specify cookie
      *               Add cookie in browser
      */
-    @JDIAction
+    @Step
     public void addCookie(Cookie cookie) {
-        invoker.doJAction("Go forward to next page",
+        invoker.doJAction("Add cookie",
                 () -> getDriver().manage().addCookie(cookie));
     }
 
     /**
      * Clear browsers cache
      */
-    @JDIAction
+    @Step
     public void clearCache() {
-        invoker.doJAction("Go forward to next page",
+        invoker.doJAction("Delete all cookies",
                 () -> getDriver().manage().deleteAllCookies());
+    }
+    public static MapArray<String, WebPage> pages = new MapArray<>();
+    public static void addPage(WebPage page) {
+        pages.update(page.getName(), page);
+    }
+    public static <T extends WebPage> T getPage(String name) {
+        WebPage page = pages.get(name);
+        return (T) (page == null ? pages.get(name + " Page") : page);
+    }
+
+    @Override
+    public String toString() {
+        return getName() + "(" + url + ")";
     }
 
     public class StringCheckType {
@@ -189,41 +248,45 @@ public class WebPage extends BaseElement implements IPage {
         private String equals;
         private String template;
         private String what;
-        private Timer timer;
 
-        public StringCheckType(Supplier<String> actual, String equals, String template, String what, Timer timer) {
+        StringCheckType(Supplier<String> actual, String equals, String template, String what, Timer timer) {
             this.actual = actual;
             this.equals = equals;
             this.template = template;
             this.what = what;
-            this.timer = timer;
         }
 
         /**
          * Check that current page url/title equals to expected url/title
          */
-        @JDIAction
-        public void check() {
-            logger.info(format("Page %s equals to '%s'", what, equals));
-            asserter.isTrue(timer.wait(() -> actual.get().equals(equals)));
+        @Step
+        public boolean check() {
+            logger.info(format("Check that page %s equals to '%s'", what, equals));
+            return equals == null
+                || equals.equals("")
+                || actual.get().equals(equals);
         }
 
         /**
          * Check that current page url/title matches to expected url/title-matcher
          */
-        @JDIAction
-        public void match() {
-            logger.info(format("Page %s matches to '%s'", what, template));
-            asserter.isTrue(timer.wait(() -> actual.get().matches(template)));
+        @Step
+        public boolean match() {
+            logger.info(format("Check that page %s matches to '%s'", what, template));
+            return template == null
+                || template.equals("")
+                || actual.get().matches(template);
         }
 
         /**
          * Check that current page url/title contains expected url/title-matcher
          */
-        @JDIAction
-        public void contains() {
-            logger.info(format("Page %s contains to '%s'", what, template));
-            asserter.isTrue(timer.wait(() -> actual.get().contains(template)));
+        @Step
+        public boolean contains() {
+            logger.info(format("Check that page %s contains to '%s'", what, template));
+            return template == null
+                    || template.equals("")
+                    || actual.get().contains(template);
         }
     }
 }

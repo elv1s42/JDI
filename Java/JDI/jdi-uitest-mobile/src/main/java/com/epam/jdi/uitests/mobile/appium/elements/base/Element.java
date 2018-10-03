@@ -18,9 +18,10 @@ package com.epam.jdi.uitests.mobile.appium.elements.base;
  */
 
 
+import com.epam.commons.LinqUtils;
 import com.epam.commons.Timer;
-import com.epam.jdi.uitests.core.annotations.JDIAction;
 import com.epam.jdi.uitests.core.interfaces.base.IElement;
+import com.epam.jdi.uitests.core.interfaces.base.IHasValue;
 import com.epam.jdi.uitests.core.settings.HighlightSettings;
 import com.epam.jdi.uitests.core.settings.JDISettings;
 import com.epam.jdi.uitests.mobile.WebSettings;
@@ -30,11 +31,18 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
+import ru.yandex.qatools.allure.annotations.Step;
 
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.function.Function;
 
+import static com.epam.commons.LinqUtils.foreach;
+import static com.epam.commons.ReflectionUtils.*;
+import static com.epam.commons.StringUtils.namesEqual;
 import static com.epam.jdi.uitests.core.logger.LogLevels.DEBUG;
 import static com.epam.jdi.uitests.core.settings.JDISettings.asserter;
+import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
 import static java.lang.String.format;
 
 /**
@@ -46,8 +54,7 @@ import static java.lang.String.format;
  * @author Shubin Konstantin
  * @author Zharov Alexandr
  */
-public class Element extends BaseElement implements IElement {
-    private WebElement webElement;
+public class Element extends BaseElement implements IElement, IHasElement {
 
     public Element() {
         super();
@@ -58,7 +65,7 @@ public class Element extends BaseElement implements IElement {
     }
 
     public Element(WebElement webElement) {
-        this.webElement = webElement;
+        avatar.setWebElement(webElement);
     }
 
     public static <T extends Element> T copy(T element, By newLocator) {
@@ -71,23 +78,70 @@ public class Element extends BaseElement implements IElement {
         }
     }
 
+    public static <T> T extractEntity(Class<T> entityClass, BaseElement el) {
+        try {
+            T data = newEntity(entityClass);
+            foreach(getFields(el, IHasValue.class), item -> {
+                Field field = LinqUtils.first(getFields(data, String.class), f ->
+                    namesEqual(f.getName(), item.getName()));
+                if (field == null)
+                    return;
+                try {
+                    field.set(data, ((IHasValue) getValueField(item, el)).getValue());
+                } catch (Exception ignore) { }
+            });
+            return data;
+        } catch (Exception ex) {
+            throw exception("Can't get entity from Form" + el.getName() + " for class: " + entityClass.getClass());
+        }
+    }
     /**
      * Specified Selenium Element for this Element
      */
-    @JDIAction
+    @Step
     public WebElement getWebElement() {
         return invoker.doJActionResult("Get web element",
-                () -> webElement != null ? webElement : avatar.getElement(), DEBUG);
+                () -> avatar.getElement(), DEBUG);
+    }
+    public WebElement getHighLightElement() {
+        return avatar.getElement();
+    }
+    public void setWebElement(WebElement webElement) {
+        avatar.setWebElement(webElement);
+    }
+    public WebElement get(By locator) {
+        Element el = new Element(locator);
+        el.setParent(this);
+        return el.getWebElement();
+    }
+    public List<WebElement> getList(By locator) {
+        return getWebElement().findElements(locator);
     }
 
+    /**
+     * Get element attribute
+     *
+     * @param name Specify name for attribute
+     * @return Returns chosen attribute
+     */
     public String getAttribute(String name) {
         return getWebElement().getAttribute(name);
     }
 
+    /**
+     * @param name  Specify attribute name
+     * @param value Specify attribute value
+     * Waits while attribute gets expected value. Return false if this not happens
+     */
     public void waitAttribute(String name, String value) {
         wait(el -> el.getAttribute(name).equals(value));
     }
 
+    /**
+     * @param attributeName Specify attribute name
+     * @param value         Specify attribute value
+     *                      Sets attribute value for Element
+     */
     public void setAttribute(String attributeName, String value) {
         invoker.doJAction(format("Set Attribute '%s'='%s'", attributeName, value),
                 () -> jsExecutor().executeScript(format("arguments[0].setAttribute('%s',arguments[1]);", attributeName),
@@ -95,25 +149,37 @@ public class Element extends BaseElement implements IElement {
     }
 
     protected boolean isDisplayedAction() {
-        return actions.findImmediately(() -> getWebElement().isDisplayed(), false);
+        return avatar.findImmediately(() -> getWebElement().isDisplayed(), false);
+    }
+
+    /**
+     * @return Check is Element visible
+     */
+    public boolean isDisplayed() {
+        return actions.isDisplayed(this::isDisplayedAction);
     }
 
     protected void waitDisplayedAction() {
         wait(WebElement::isDisplayed);
     }
 
-    public boolean isDisplayed() {
-        return actions.isDisplayed(this::isDisplayedAction);
-    }
-
+    /**
+     * @return Check is Element hidden
+     */
     public boolean isHidden() {
         return actions.isDisplayed(() -> !isDisplayedAction());
     }
 
+    /**
+     * Waits while Element becomes visible
+     */
     public void waitDisplayed() {
         actions.waitDisplayed(getWebElement()::isDisplayed);
     }
 
+    /**
+     * Waits while Element becomes invisible
+     */
     public void waitVanished() {
         actions.waitVanished(() -> timer().wait(() -> !isDisplayedAction()));
     }
@@ -125,9 +191,9 @@ public class Element extends BaseElement implements IElement {
 
     /**
      * @param resultFunc Specify expected function result
-     * @return Waits while condition with WebElement happens during specified timeout and returns result using resultFunc
+     * Waits while condition with WebElement happens during specified timeout and returns result using resultFunc
      */
-    @JDIAction
+    @Step
     public void wait(Function<WebElement, Boolean> resultFunc) {
         boolean result = wait(resultFunc, r -> r);
         asserter.isTrue(result);
@@ -138,7 +204,7 @@ public class Element extends BaseElement implements IElement {
      * @param condition  Specify expected function condition
      * @return Waits while condition with WebElement happens and returns result using resultFunc
      */
-    @JDIAction
+    @Step
     public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition) {
         return timer().getResultByCondition(() -> resultFunc.apply(getWebElement()), condition::apply);
     }
@@ -146,9 +212,9 @@ public class Element extends BaseElement implements IElement {
     /**
      * @param resultFunc Specify expected function result
      * @param timeoutSec Specify timeout
-     * @return Waits while condition with WebElement happens during specified timeout and returns wait result
+     * Waits while condition with WebElement happens during specified timeout and returns wait result
      */
-    @JDIAction
+    @Step
     public void wait(Function<WebElement, Boolean> resultFunc, int timeoutSec) {
         boolean result = wait(resultFunc, r -> r, timeoutSec);
         asserter.isTrue(result);
@@ -160,10 +226,10 @@ public class Element extends BaseElement implements IElement {
      * @param condition  Specify expected function condition
      * @return Waits while condition with WebElement and returns wait result
      */
-    @JDIAction
+    @Step
     public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition, int timeoutSec) {
         setWaitTimeout(timeoutSec);
-        T result = new Timer(timeoutSec).getResultByCondition(() -> resultFunc.apply(getWebElement()), condition::apply);
+        T result = new Timer(timeoutSec * 1000).getResultByCondition(() -> resultFunc.apply(getWebElement()), condition::apply);
         restoreWaitTimeout();
         return result;
     }
@@ -191,7 +257,6 @@ public class Element extends BaseElement implements IElement {
 
     public void doubleClick() {
         invoker.doJAction("Double click on Element", () -> {
-            getWebElement().getSize(); //for scroll to object
             Actions builder = new Actions(getDriver());
             builder.doubleClick(getWebElement()).perform();
         });
@@ -199,7 +264,6 @@ public class Element extends BaseElement implements IElement {
 
     public void rightClick() {
         invoker.doJAction("Right click on Element", () -> {
-            getWebElement().getSize(); //for scroll to object
             Actions builder = new Actions(getDriver());
             builder.contextClick(getWebElement()).perform();
         });
@@ -207,7 +271,6 @@ public class Element extends BaseElement implements IElement {
 
     public void clickCenter() {
         invoker.doJAction("Click in Center of Element", () -> {
-            getWebElement().getSize(); //for scroll to object
             Actions builder = new Actions(getDriver());
             builder.click(getWebElement()).perform();
         });
@@ -215,7 +278,6 @@ public class Element extends BaseElement implements IElement {
 
     public void mouseOver() {
         invoker.doJAction("Move mouse over Element", () -> {
-            getWebElement().getSize(); //for scroll to object
             Actions builder = new Actions(getDriver());
             builder.moveToElement(getWebElement()).build().perform();
         });
@@ -241,4 +303,8 @@ public class Element extends BaseElement implements IElement {
                 new Actions(getDriver()).dragAndDropBy(getWebElement(), x, y).build().perform());
     }
 
+    public void dragAndDrop(Element target) {
+        invoker.doJAction(format("Drag and drop to Target Element: %s", target.toString()), () ->
+                new Actions(getDriver()).dragAndDrop(getWebElement(), target.getWebElement()).build().perform());
+    }
 }

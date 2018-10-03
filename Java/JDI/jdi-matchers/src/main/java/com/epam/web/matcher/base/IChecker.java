@@ -27,6 +27,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import static com.epam.commons.LinqUtils.toIntArray;
+import static com.epam.commons.ReflectionUtils.getFields;
+import static java.util.Arrays.asList;
 
 /**
  * Created by Roman_Iovlev on 8/28/2015.
@@ -51,20 +53,20 @@ public interface IChecker {
     void isFalse(Boolean condition, String failMessage);
 
     default void isFalse(Boolean condition) { isFalse(condition, null); }
-    void throwException(String actionName, JAction action, Class<Exception> exceptionClass, String exceptionText);
+    <E extends Exception> void  throwException(String actionName, JAction action, Class<E> exceptionClass, String exceptionText);
 
     default void throwException(String actionName, JAction action, String exceptionText) {
         throwException(action, null, exceptionText);
     }
-    default void throwException(String actionName, JAction action, Class<Exception> exceptionClass) {
+    default <E extends Exception> void throwException(String actionName, JAction action, Class<E> exceptionClass) {
         throwException(action, exceptionClass, "");
     }
-    void throwException(JAction action, Class<Exception> exceptionClass, String exceptionText);
+    <E extends Exception> void throwException(JAction action, Class<E> exceptionClass, String exceptionText);
 
     default void throwException(JAction action, String exceptionText) {
         throwException(action, null, exceptionText);
     }
-    default void throwException(JAction action, Class<Exception> exceptionClass) {
+    default <E extends Exception> void throwException(JAction action, Class<E> exceptionClass) {
         throwException(action, exceptionClass, "");
     }
     void hasNoExceptions(String actionName, JAction action);
@@ -79,10 +81,6 @@ public interface IChecker {
 
     default void isNotEmpty(Object obj) { isNotEmpty(obj, null); }
 
-    <T> void areSame(T actual, T expected, String failMessage);
-
-    default <T> void areSame(T actual, T expected) { areSame(actual, expected, null); }
-
     <T> void areDifferent(T actual, T expected, String failMessage);
 
     default <T> void areDifferent(T actual, T expected) { areDifferent(actual, expected, null); }
@@ -91,34 +89,42 @@ public interface IChecker {
 
     default <T> void listEquals(Collection<T> actual, Collection<T> expected) { listEquals(actual, expected, null); }
 
+    default <T> void listContains(Collection<T> actual, T expected, String failMessage) { listContains(actual, asList(expected), failMessage);};
+
+    default <T> void listContains(Collection<T> actual, T expected) { listContains(actual, asList(expected), null); }
+
+    <T> void listContains(Collection<T> actual, Collection<T> expected, String failMessage);
+
+    default <T> void listContains(Collection<T> actual, Collection<T> expected) { listContains(actual, expected, null); }
+
     <T> void arrayEquals(T actual, T expected, String failMessage);
 
     default <T> void arrayEquals(T actual, T expected) {
         arrayEquals(actual, expected, null);
     }
 
-    <T> void entityIncludeMapArray(MapArray<String, String> actual, T entity, String failMessage);
+    <T> void entityIncludeMapArray(T entity, MapArray<String, String> actual, String failMessage);
 
-    default <T> void entityIncludeMapArray(MapArray<String, String> actual, T entity) {
-        entityIncludeMapArray(actual, entity, null);
+    default <T> void entityIncludeMapArray(T entity, MapArray<String, String> expected) {
+        entityIncludeMapArray(entity, expected, null);
     }
 
-    <T> void entityEqualsToMapArray(MapArray<String, String> actual, T entity, String failMessage);
+    <T> void entityEqualsToMapArray(T entity, MapArray<String, String> expected, String failMessage);
 
-    default <T> void entityEqualsToMapArray(MapArray<String, String> actual, T entity) {
-        entityEqualsToMapArray(actual, entity, null);
+    default <T> void entityEqualsToMapArray(T entity, MapArray<String, String> expected) {
+        entityEqualsToMapArray(entity, expected, null);
     }
 
-    <T> void entityIncludeMap(Map<String, String> actual, T entity, String failMessage);
+    <T> void entityIncludeMap(T entity, Map<String, String> expected, String failMessage);
 
-    default <T> void entityIncludeMap(Map<String, String> actual, T entity) {
-        entityIncludeMap(actual, entity, null);
+    default <T> void entityIncludeMap(T entity, Map<String, String> expected) {
+        entityIncludeMap(entity, expected, null);
     }
 
-    <T> void entityEqualsToMap(Map<String, String> actual, T entity, String failMessage);
+    <T> void entityEqualsToMap(T entity, Map<String, String> expected, String failMessage);
 
-    default <T> void entityEqualsToMap(Map<String, String> actual, T entity) {
-        entityEqualsToMap(actual, entity, null);
+    default <T> void entityEqualsToMap(T entity, Map<String, String> expected) {
+        entityEqualsToMap(entity, expected, null);
     }
 
     void isSortedByAsc(int[] array, String failMessage);
@@ -213,28 +219,34 @@ public interface IChecker {
         arrayEquals(actual, expected, null);
     }
 
-    <T> void entityIncludeMapArray(Supplier<MapArray<String, String>> actual, T entity, String failMessage);
+    default <T> void entitiesAreEquals(T actual, T expected, String failMessage) {
+        listEquals(getFields(actual.getClass()), getFields(expected.getClass()), failMessage);
+    }
+    default  <T> void entitiesAreEquals(T actual, T expected) {
+        entitiesAreEquals(actual, expected, null);
+    }
+    <T> void entityIncludeMapArray(T entity, Supplier<MapArray<String, String>> expected, String failMessage);
 
-    default <T> void entityIncludeMapArray(Supplier<MapArray<String, String>> actual, T entity) {
-        entityIncludeMapArray(actual, entity, null);
+    default <T> void entityIncludeMapArray(T entity, Supplier<MapArray<String, String>> expected) {
+        entityIncludeMapArray(entity, expected, null);
     }
 
-    <T> void entityEqualsToMapArray(Supplier<MapArray<String, String>> actual, T entity, String failMessage);
+    <T> void entityEqualsToMapArray(T entity, Supplier<MapArray<String, String>> expected, String failMessage);
 
-    default <T> void entityEqualsToMapArray(Supplier<MapArray<String, String>> actual, T entity) {
-        entityEqualsToMapArray(actual, entity, null);
+    default <T> void entityEqualsToMapArray(T entity, Supplier<MapArray<String, String>> expected) {
+        entityEqualsToMapArray(entity, expected, null);
     }
 
-    <T> void entityIncludeMap(Supplier<Map<String, String>> actual, T entity, String failMessage);
+    <T> void entityIncludeMap(T entity, Supplier<Map<String, String>> expected, String failMessage);
 
-    default <T> void entityIncludeMap(Supplier<Map<String, String>> actual, T entity) {
-        entityIncludeMap(actual, entity, null);
+    default <T> void entityIncludeMap(T entity, Supplier<Map<String, String>> expected) {
+        entityIncludeMap(entity, expected, null);
     }
 
-    <T> void entityEqualsToMap(Supplier<Map<String, String>> actual, T entity, String failMessage);
+    <T> void entityEqualsToMap(T entity, Supplier<Map<String, String>> expected, String failMessage);
 
-    default <T> void entityEqualsToMap(Supplier<Map<String, String>> actual, T entity) {
-        entityEqualsToMap(actual, entity, null);
+    default <T> void entityEqualsToMap(T entity, Supplier<Map<String, String>> expected) {
+        entityEqualsToMap(entity, expected, null);
     }
 
     <T> BaseMatcher.ListChecker eachElementOf(Collection<T> list);

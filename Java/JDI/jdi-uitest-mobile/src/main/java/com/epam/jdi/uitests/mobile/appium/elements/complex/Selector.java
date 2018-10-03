@@ -46,22 +46,40 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
         super(optionsNamesLocatorTemplate, allOptionsNamesLocator);
     }
 
+    /**
+     * @param name Specify name using string
+     *             Select Element with name (use text) from list
+     */
     public final void select(String name) {
         actions.select(name, this::selectAction);
     }
 
+    /**
+     * @param name Specify name using enum
+     *             Select Element with name (use enum) from list
+     */
     public final void select(TEnum name) {
         select(getEnumValue(name));
     }
 
+    /**
+     * @param index Specify digit to select
+     *              Select Element with name (use index) from list
+     */
     public final void select(int index) {
         actions.select(index, this::selectAction);
     }
 
+    /**
+     * @return Get name of the selected Element
+     */
     public final String getSelected() {
         return actions.getSelected(this::getSelectedAction);
     }
 
+    /**
+     * @return Get index of the selected Element
+     */
     public final int getSelectedIndex() {
         return actions.getSelectedIndex(this::getSelectedIndexAction);
     }
@@ -80,7 +98,7 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
 
     protected String getSelectedAction() {
         if (allLabels() != null)
-            return getSelected(allLabels().getWebElements());
+            return getSelected(allLabels().avatar.searchAll().getElements());
         if (getLocator().toString().contains("%s"))
             throw exception("Can't get Selected options. Override getSelectedAction or place locator to <select> tag");
         List<WebElement> els = getAvatar().searchAll().getElements();
@@ -99,7 +117,7 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
 
     protected int getSelectedIndexAction() {
         if (allLabels() != null) {
-            return getSelectedIndex(allLabels().getWebElements());
+            return getSelectedIndex(allLabels().avatar.searchAll().getElements());
         }
         if (getLocator().toString().contains("%s"))
             throw exception("Can't get Selected options. Override getSelectedAction or place locator to <select> tag");

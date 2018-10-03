@@ -18,14 +18,12 @@ package com.epam.jdi.uitests.web.selenium.elements.apiInteract;
  */
 
 
-import com.epam.commons.LinqUtils;
 import com.epam.commons.Timer;
-import com.epam.commons.pairs.Pair;
-import com.epam.commons.pairs.Pairs;
+import com.epam.commons.linqinterfaces.JFuncTREx;
 import com.epam.jdi.uitests.core.interfaces.base.IAvatar;
 import com.epam.jdi.uitests.core.interfaces.base.IBaseElement;
-import com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils;
-import com.epam.jdi.uitests.web.selenium.elements.BaseElement;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
+import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebDriver;
@@ -33,48 +31,69 @@ import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Objects;
+import java.util.function.Supplier;
 
+import static com.epam.commons.LinqUtils.any;
 import static com.epam.commons.LinqUtils.where;
-import static com.epam.commons.PrintUtils.print;
 import static com.epam.commons.ReflectionUtils.isClass;
 import static com.epam.jdi.uitests.core.settings.JDISettings.*;
-import static com.epam.jdi.uitests.web.settings.WebSettings.getDriverFactory;
+import static com.epam.jdi.uitests.web.selenium.driver.SeleniumDriverFactory.elementSearchCriteria;
+import static com.epam.jdi.uitests.web.selenium.driver.SeleniumDriverFactory.onlyOneElementAllowedInSearch;
+import static com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils.*;
 import static java.lang.String.format;
 
 /**
  * Created by Roman_Iovlev on 7/3/2015.
  */
 public class GetElementModule implements IAvatar {
-    private static final String FAILED_TO_FIND_ELEMENT_MESSAGE = "Can't find Element '%s' during %s seconds";
-    private static final String FIND_TO_MUCH_ELEMENTS_MESSAGE = "Find %s elements instead of one for Element '%s' during %s seconds";
-    public By byLocator;
-    public Pairs<ContextType, By> context = new Pairs<>();
-    public Function<WebElement, Boolean> localElementSearchCriteria = null;
-    public WebElement rootElement;
+    private static final String FAILED_TO_FIND_ELEMENT_MESSAGE
+            = "Can't find Element '%s' during %s seconds";
+    private static final String FIND_TO_MUCH_ELEMENTS_MESSAGE
+            = "Find %s elements instead of one for Element '%s' during %s seconds";
+    private By byLocator;
+    public By frameLocator;
+    public JFuncTREx<WebElement, Boolean> localElementSearchCriteria = null;
     private String driverName = "";
-    private IBaseElement element;
+    private BaseElement element;
+    private WebElement webElement;
     private List<WebElement> webElements;
+    public void setLocator(By locator) {
+        byLocator = locator;
+    }
 
-    public GetElementModule(IBaseElement element) {
+    public GetElementModule(BaseElement element) {
         this.element = element;
-        driverName = driverFactory.currentDriverName();
+        if (driverName.equals(""))
+            driverName = driverFactory.currentDriverName();
     }
 
-    public GetElementModule(By byLocator, IBaseElement element) {
+    public GetElementModule(By byLocator, BaseElement element) {
         this(element);
         this.byLocator = byLocator;
     }
 
-    public GetElementModule(By byLocator, Pairs<ContextType, By> context, IBaseElement element) {
-        this(element);
-        this.byLocator = byLocator;
-        this.context = context;
+    public GetElementModule copy() {
+        return copy(byLocator);
+    }
+
+    public GetElementModule copy(By byLocator) {
+        GetElementModule clone = new GetElementModule(byLocator, element);
+        clone.localElementSearchCriteria = localElementSearchCriteria;
+        clone.frameLocator = frameLocator;
+        clone.driverName = driverName;
+        clone.element = element;
+        clone.webElement = webElement;
+        clone.webElements = webElements;
+        return clone;
     }
 
     public boolean hasLocator() {
         return byLocator != null;
     }
+    public By getLocator() { return byLocator; }
+    public void setWebElement(WebElement webElement) { this.webElement = webElement; }
+    public boolean hasWebElement() { if (webElement == null) return false; try { webElement.getTagName(); return true; } catch (Exception ex) {return false; } }
 
     public WebDriver getDriver() {
         return (WebDriver) driverFactory.getDriver(driverName);
@@ -86,7 +105,9 @@ public class GetElementModule implements IAvatar {
 
     public WebElement getElement() {
         logger.debug("Get Web Element: " + element);
-        WebElement element = timer().getResultByCondition(this::getElementAction, el -> el != null);
+        WebElement element = hasWebElement()
+                ? webElement
+                : getElementAction();
         logger.debug("One Element found");
         return element;
     }
@@ -98,69 +119,116 @@ public class GetElementModule implements IAvatar {
         return elements;
     }
 
+    public <T> T findImmediately(Supplier<T> func, T ifError) {
+        element.setWaitTimeout(0);
+        JFuncTREx<WebElement, Boolean> temp = localElementSearchCriteria;
+        localElementSearchCriteria = el -> true;
+        T result;
+        try {
+            result = func.get();
+        } catch (Exception | Error ex) {
+            result = ifError;
+        }
+        localElementSearchCriteria = temp;
+        element.restoreWaitTimeout();
+        return result;
+    }
+
+    public Timer timer(int sec) {
+        return new Timer(sec * 1000);
+    }
     public Timer timer() {
-        return new Timer(timeouts.currentTimeoutSec * 1000);
+        return timer(timeouts.getCurrentTimeoutSec());
+    }
+    private List<WebElement> getElementsByCondition(JFuncTREx<WebElement, Boolean> condition) {
+        List<WebElement> elements = timer().getResultByCondition(
+                this::searchElements,
+                els -> any(els, getSearchCriteria()));
+        if (elements == null || elements.size() == 0)
+            return new ArrayList<>();
+        return elements.size() < 10 ? where(elements, condition) : elements;
     }
 
     private List<WebElement> getElementsAction() {
         if (webElements != null)
             return webElements;
-        List<WebElement> result = timer().getResultByCondition(
-                this::searchElements,
-                els -> where(els, getSearchCriteria()).size() > 0);
+        List<WebElement> result = getElementsByCondition(getSearchCriteria());
         timeouts.dropTimeouts();
         if (result == null)
             throw exception("Can't get Web Elements");
-        return where(result, el -> getSearchCriteria().apply(el));
+        return result;
     }
 
-    private Function<WebElement, Boolean> getSearchCriteria() {
-        return localElementSearchCriteria != null ? localElementSearchCriteria : getDriverFactory().elementSearchCriteria;
+    private JFuncTREx<WebElement, Boolean> getSearchCriteria() {
+        return localElementSearchCriteria != null ? localElementSearchCriteria : elementSearchCriteria;
     }
 
     public GetElementModule searchAll() {
-        localElementSearchCriteria = el -> el != null;
+        localElementSearchCriteria = Objects::nonNull;
         return this;
+    }
+    private List<WebElement> getOneOrMoreElements() {
+        List<WebElement> result = hasWebElement()
+            ? webElements
+            : searchElements();
+        if (result.size() == 1)
+            return result;
+        return where(result, el -> getSearchCriteria().invoke(el));
     }
 
     private WebElement getElementAction() {
-        int timeout = timeouts.currentTimeoutSec;
-        List<WebElement> result = getElementsAction();
+        int timeout = timeouts.getCurrentTimeoutSec();
+        List<WebElement> result = getOneOrMoreElements();
         switch (result.size()) {
             case 0:
                 throw exception(FAILED_TO_FIND_ELEMENT_MESSAGE, element, timeout);
             case 1:
                 return result.get(0);
             default:
-                throw exception(FIND_TO_MUCH_ELEMENTS_MESSAGE, result.size(), element, timeout);
+                if (onlyOneElementAllowedInSearch)
+                    throw exception(FIND_TO_MUCH_ELEMENTS_MESSAGE, result.size(), element, timeout);
+                return result.get(0);
         }
     }
 
-    private SearchContext getSearchContext(BaseElement element) {
-        SearchContext searchContext = isClass(element.getParent().getClass(), BaseElement.class)
-                ? getSearchContext((BaseElement) element.getParent())
-                : getDriver().switchTo().defaultContent();
-        return element.getLocator() != null
-                ? searchContext.findElement(correctXPaths(element.getLocator()))
+    private SearchContext getSearchContext(Object element) {
+        if (element == null || !isClass(element.getClass(), BaseElement.class))
+            return getDefaultContext();
+        BaseElement bElement = (BaseElement) element;
+        if (bElement.useCache && isClass(bElement.getClass(), Element.class)) {
+            Element el = (Element) bElement;
+            if (el.avatar.hasWebElement())
+                return el.avatar.webElement;
+        }
+        Object p = bElement.getParent();
+        By locator = bElement.getLocator();
+        By frame = bElement.avatar.frameLocator;
+        SearchContext searchContext = frame != null
+            ? getFrameContext(frame)
+            : p == null || containsRoot(locator)
+                ? getDefaultContext()
+                : getSearchContext(p);
+        return locator != null
+                ? searchContext.findElement(correctLocator(locator))
                 : searchContext;
     }
-    private List<WebElement> searchElements()
-    {
-        Object p = element.getParent();
-        BaseElement parent = p != null && isClass(p.getClass(), BaseElement.class)
-            ? (BaseElement) p
-            : null;
-        SearchContext context = parent != null
-                ? getSearchContext(parent)
-                : getDriver().switchTo().defaultContent();
-        return context.findElements(correctXPaths(byLocator));
+    private SearchContext getDefaultContext() {
+        return getDriver().switchTo().defaultContent();
     }
-
-    private By correctXPaths(By byValue) {
-        return byValue.toString().contains("By.xpath: //")
-                ? WebDriverByUtils.getByFunc(byValue).apply(WebDriverByUtils.getByLocator(byValue)
-                .replaceFirst("/", "./"))
-                : byValue;
+    private SearchContext getFrameContext(By frame) {
+        return getDriver().switchTo().frame(getDriver().findElement(frame));
+    }
+    private List<WebElement> searchElements() {
+        SearchContext searchContext = getDefaultContext();
+        if (!containsRoot(getLocator()))
+            searchContext = getSearchContext(element.getParent());
+        return searchContext.findElements(correctLocator(getLocator()));
+    }
+    private By correctLocator(By locator) {
+        if (locator == null) return null;
+        return correctXPaths(containsRoot(locator)
+                ? trimRoot(locator)
+                : locator);
     }
 
     public void clearCookies() {
@@ -169,25 +237,22 @@ public class GetElementModule implements IAvatar {
 
     @Override
     public String toString() {
+        if (hasWebElement()) return "Has WebElement";
         return shortLogMessagesFormat
                 ? printFullLocator()
-                : format("Locator: '%s'", byLocator)
-                + ((context.size() > 0)
-                        ? format(", Context: '%s'", context)
+                : format("Locator: '%s'", getLocator())
+                + (element.getParent() != null && isClass(element.getParent().getClass(), IBaseElement.class)
+                        ? format(", Context: '%s'", element.printContext())
                         : "");
     }
 
     private String printFullLocator() {
-        if (byLocator == null)
+        if (!hasLocator())
             return "No Locators";
-        List<String> result = new ArrayList<>();
-        if (context.size() != 0)
-            result = LinqUtils.select(context, el -> printShortBy(el.value));
-        result.add(printShortBy(byLocator));
-        return print(result);
+        return element.printContext() + "; " + printShortBy(getLocator());
     }
 
     private String printShortBy(By by) {
-        return String.format("%s='%s'", WebDriverByUtils.getByName(by), WebDriverByUtils.getByLocator(by));
+        return String.format("%s='%s'", getByName(by), getByLocator(by));
     }
 }

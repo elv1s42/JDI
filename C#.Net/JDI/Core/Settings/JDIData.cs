@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Epam.JDI.Core.Settings
+﻿namespace Epam.JDI.Core.Settings
 {
     public static class JDIData
     {
-        public static string AppVersion = "2.0.0";
-        public static string TestName;
+        public static string FRAMEWORK_NAME = "JDI";
+        //CHECKSTYLE OFF
+        public static string APP_VERSION = "DEFAULT";
+        //CHECKSTYLE ON
+        public static string testName;
+
+        static JDIData()
+        {
+        }
     }
 }

@@ -2,18 +2,20 @@ package com.epam.jdi.uitests.testing.unittests.tests.common;
 
 import com.epam.jdi.uitests.testing.unittests.InitTests;
 import com.epam.jdi.uitests.web.selenium.elements.common.TextArea;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
 
+import static com.codeborne.selenide.Condition.*;
+import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.jdi.uitests.testing.unittests.entities.User.DEFAULT;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.CONTACT_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.CONTACT_PAGE_FILLED;
 import static com.epam.jdi.uitests.testing.unittests.pageobjects.EpamJDISite.contactFormPage;
 import static com.epam.jdi.uitests.web.settings.WebSettings.getJSExecutor;
-import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static org.testng.Assert.assertEquals;
 
 /**
@@ -67,5 +69,16 @@ public class TextAreaTests extends InitTests {
                         this::textItem, "text123", "text123",
                         DEFAULT.description, "pti", ".escriptio.")
         };
+    }
+
+    @Test
+    public void imageIsDisplayedTest(){
+        Assert.assertTrue(textItem().isDisplayed());
+    }
+
+    @Test
+    public void shouldTest(){
+        textItem().shouldHave(attribute("rows"), attribute("cols"), id("Description"))
+                .shouldBe(empty);
     }
 }

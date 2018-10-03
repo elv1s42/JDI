@@ -32,16 +32,25 @@ public class Popup extends Text implements IPopup {
         return getWebElement().getText();
     }
 
+    /**
+     * Click on Button marked with annotation @OkButton or named "okButton"
+     */
     public void ok() {
-        getElement.getButton(Functions.OK_BUTTON).click();
+        getElementClass.getButton(Functions.OK_BUTTON).click();
     }
 
+    /**
+     * Click on Button marked with annotation @CancelButton or named "cancelButton"
+     */
     public void cancel() {
-        getElement.getButton(Functions.CANCEL_BUTTON).click();
+        getElementClass.getButton(Functions.CANCEL_BUTTON).click();
     }
 
+    /**
+     * Click on Button marked with annotation @CloseButton or named "closeButton"
+     */
     public void close() {
-        getElement.getButton(Functions.CLOSE_BUTTON).click();
+        getElementClass.getButton(Functions.CLOSE_BUTTON).click();
     }
 
 }

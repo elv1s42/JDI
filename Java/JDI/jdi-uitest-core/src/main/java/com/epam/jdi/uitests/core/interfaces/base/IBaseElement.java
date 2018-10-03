@@ -17,6 +17,7 @@ package com.epam.jdi.uitests.core.interfaces.base;
  * along with JDI. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.codeborne.selenide.Condition;
 import com.epam.jdi.uitests.core.annotations.functions.Functions;
 
 import java.lang.reflect.Field;
@@ -24,15 +25,21 @@ import java.lang.reflect.Field;
 /**
  * Created by Roman_Iovlev on 6/10/2015.
  */
-public interface IBaseElement {
+public interface IBaseElement extends IHasParent {
     /**
      * @return Get Element’s name
      */
     String getName();
     void setName(Field field);
     void setTypeName(String typeName);
-    void setParent(Object parent);
-    Object getParent();
+    String printContext();
     void setFunction(Functions function);
     IAvatar getAvatar();
+
+    IBaseElement should(Condition... condition);
+    IBaseElement shouldHave(Condition... condition);
+    IBaseElement shouldBe(Condition... condition);
+    IBaseElement shouldNot(Condition... condition);
+    IBaseElement shouldNotHave(Condition... condition);
+    IBaseElement shouldNotBe(Condition... condition);
 }

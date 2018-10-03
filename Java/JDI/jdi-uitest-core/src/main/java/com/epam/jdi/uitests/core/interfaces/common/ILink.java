@@ -17,8 +17,10 @@ package com.epam.jdi.uitests.core.interfaces.common;
  * along with JDI. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.epam.jdi.uitests.core.annotations.JDIAction;
 import com.epam.jdi.uitests.core.interfaces.base.IClickable;
+import ru.yandex.qatools.allure.annotations.Step;
+
+import java.net.URL;
 
 /**
  * Created by Roman_Iovlev on 6/10/2015.
@@ -27,26 +29,32 @@ public interface ILink extends IClickable, IText {
     /**
      * @return Get link destination
      */
-    @JDIAction
+    @Step
     String getReference();
+
+    /**
+     * @return Get URL
+     */
+    @Step
+    URL getURL();
 
     /**
      * @param text Specify expected text
      * @return Wait while link destination contains expected text. Returns link destination
      */
-    @JDIAction
+    @Step
     String waitReferenceContains(String text);
 
     /**
      * @param regEx Specify expected regular expression Text
      * @return Wait while link destination contains expected text. Returns link destination
      */
-    @JDIAction
+    @Step
     String waitMatchReference(String regEx);
 
     /**
      * @return Get links tooltip
      */
-    @JDIAction
+    @Step
     String getTooltip();
 }

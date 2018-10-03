@@ -19,6 +19,7 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
 
 
 import com.epam.jdi.uitests.core.interfaces.complex.ISelector;
+import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -46,22 +47,40 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
         super(optionsNamesLocatorTemplate, allOptionsNamesLocator);
     }
 
+    /**
+     * @param name Specify name using string
+     *             Select Element with name (use text) from list
+     */
     public final void select(String name) {
         actions.select(name, this::selectAction);
     }
 
+    /**
+     * @param name Specify name using enum
+     *             Select Element with name (use enum) from list
+     */
     public final void select(TEnum name) {
         select(getEnumValue(name));
     }
 
-    public final void select(int index) {
-        actions.select(index, this::selectAction);
+    /**
+     * @param num Specify digit to select
+     *              Select Element with name (use index) from list
+     */
+    public final void select(int num) {
+        actions.select(num, this::selectAction);
     }
 
+    /**
+     * @return Get name of the selected Element
+     */
     public final String getSelected() {
         return actions.getSelected(this::getSelectedAction);
     }
 
+    /**
+     * @return Get index of the selected Element
+     */
     public final int getSelectedIndex() {
         return actions.getSelectedIndex(this::getSelectedIndexAction);
     }
@@ -70,8 +89,8 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
         return getSelectedAction().equals(name);
     }
 
-    protected final boolean isSelectedAction(int index) {
-        return getSelectedIndexAction() == index;
+    protected final boolean isSelectedAction(int num) {
+        return getSelectedIndexAction() == num;
     }
 
     protected String getValueAction() {
@@ -86,6 +105,7 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
         WebElement element = first(els, this::isSelectedAction);
         if (element == null)
             throw exception("No elements selected. Override getSelectedAction or place locator to <select> tag");
+        new Element(element).invoker.processDemoMode();
         return element.getText();
     }
 
@@ -94,9 +114,9 @@ public class Selector<TEnum extends Enum> extends BaseSelector<TEnum> implements
     }
 
     private int getSelectedIndex(List<WebElement> els) {
-        int index = firstIndex(els, this::isSelectedAction) + 1;
-        if (index == 0)
+        int num = firstIndex(els, this::isSelectedAction) + 1;
+        if (num == 0)
             throw exception("No elements selected. Override getSelectedAction or place locator to <select> tag");
-        return index;
+        return num;
     }
 }

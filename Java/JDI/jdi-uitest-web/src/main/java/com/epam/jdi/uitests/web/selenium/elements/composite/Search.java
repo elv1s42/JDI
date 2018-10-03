@@ -18,12 +18,15 @@ package com.epam.jdi.uitests.web.selenium.elements.composite;
  */
 
 
+import com.epam.jdi.uitests.core.interfaces.base.ISetup;
 import com.epam.jdi.uitests.core.interfaces.common.IButton;
 import com.epam.jdi.uitests.core.interfaces.common.ITextField;
 import com.epam.jdi.uitests.core.interfaces.complex.ISearch;
-import com.epam.jdi.uitests.web.selenium.elements.base.Clickable;
+import com.epam.jdi.uitests.web.selenium.elements.apiInteract.GetElementModule;
+import com.epam.jdi.uitests.web.selenium.elements.common.Button;
 import com.epam.jdi.uitests.web.selenium.elements.common.TextField;
 import com.epam.jdi.uitests.web.selenium.elements.complex.TextList;
+import com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.JSearch;
 import org.openqa.selenium.By;
 
 import java.lang.reflect.Field;
@@ -32,14 +35,15 @@ import java.util.List;
 import static com.epam.commons.ReflectionUtils.getFields;
 import static com.epam.commons.ReflectionUtils.getValueField;
 import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
-import static com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils.fillByTemplate;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.WebAnnotationsUtil.findByToBy;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.FillFromAnnotationRules.fieldHasAnnotation;
 import static java.lang.String.format;
 
 /**
  * Created by Roman_Iovlev on 7/29/2015.
  */
-public class Search extends TextField implements ISearch {
-    protected Clickable select;
+public class Search extends TextField implements ISearch, ISetup {
+    protected IButton searchButton;
     protected TextList<Enum> suggestions;
 
     public Search() {
@@ -56,8 +60,8 @@ public class Search extends TextField implements ISearch {
 
     public Search(By byLocator, By selectLocator, By suggestionsListLocator) {
         super(byLocator);
-        this.select = new Clickable(selectLocator);
-        this.suggestions = new TextList(suggestionsListLocator);
+        this.searchButton = new Button(selectLocator);
+        this.suggestions = new TextList<>(suggestionsListLocator);
     }
 
     protected void findAction(String text) {
@@ -67,7 +71,10 @@ public class Search extends TextField implements ISearch {
 
     protected void chooseSuggestionAction(String text, String selectValue) {
         getSearchField().input(text);
-        getElement(selectValue).click();
+        if (suggestions != null)
+            getSuggestionsList().getElement(selectValue).click();
+        else
+            throw exception("Select locator not specified for search. Use accordance constructor");
     }
 
     protected void chooseSuggestionAction(String text, int selectIndex) {
@@ -80,38 +87,66 @@ public class Search extends TextField implements ISearch {
         return getSuggestions().getLabels();
     }
 
+    /**
+     * @param text Specify Text to search
+     *             Input text in search field and press search button
+     */
     public final void find(String text) {
         invoker.doJAction(format("Search text '%s'", text), () -> findAction(text));
     }
 
+    /**
+     * @param text        Specify Text to search
+     * @param selectValue Specify value to choose from suggested search result
+     *                    Input text in search and then select value from suggestions
+     */
     public final void chooseSuggestion(String text, String selectValue) {
         invoker.doJAction(format("Search for text '%s' and choose suggestion '%s'", text, selectValue),
                 () -> chooseSuggestionAction(text, selectValue));
     }
 
+    /**
+     * @param text        Specify Text to search
+     * @param selectIndex Specify index to choose from suggested search result
+     *                    Input text in search and then select suggestions by index
+     */
     public final void chooseSuggestion(String text, int selectIndex) {
         invoker.doJAction(format("Search for text '%s' and choose suggestion '%s'", text, selectIndex),
                 () -> chooseSuggestionAction(text, selectIndex));
     }
 
+    /**
+     * @param text Specify Text to search
+     * @return Select all suggestions for text
+     */
     public final List<String> getSuggesions(String text) {
         return invoker.doJActionResult(format("Get all suggestions for input '%s'", text),
                 () -> getSuggesionsAction(text));
     }
 
-    private TextList<Enum> getSuggestions() {
+    protected TextList<Enum> getSuggestions() {
         if (suggestions != null)
-            return suggestions;
+            return getSuggestionsList();
         throw exception("Suggestions list locator not specified for search. Use accordance constructor");
     }
 
-    private Clickable getElement(String name) {
-        if (select != null)
-            return copy(select, fillByTemplate(getLocator(), name));
-        throw exception("Select locator not specified for search. Use accordance constructor");
+    protected TextList<Enum> getSuggestionsList() {
+        suggestions.setParent(getParent());
+        return suggestions;
+    }
+    protected TextField getTextField() {
+        TextField textField = new TextField(getLocator());
+        textField.setParent(getParent());
+        return textField;
+    }
+    protected IButton getFindButton() {
+        searchButton.setParent(getParent());
+        return searchButton;
     }
 
-    private ITextField getSearchField() {
+    protected ITextField getSearchField() {
+        if (getLocator() != null)
+            return getTextField();
         List<Field> fields = getFields(this, ITextField.class);
         switch (fields.size()) {
             case 0:
@@ -124,6 +159,8 @@ public class Search extends TextField implements ISearch {
     }
 
     protected IButton getSearchButton() {
+        if (searchButton != null)
+            return getFindButton();
         List<Field> fields = getFields(this, IButton.class);
         switch (fields.size()) {
             case 0:
@@ -133,5 +170,28 @@ public class Search extends TextField implements ISearch {
             default:
                 throw exception("Form '%s' have more than 1 button. Use submit(entity, buttonName) for this case instead", toString());
         }
+    }
+
+    public void setup(Field field) {
+        if (!fieldHasAnnotation(field, JSearch.class, ISearch.class))
+            return;
+        JSearch jSearch = field.getAnnotation(JSearch.class);
+        By root = findByToBy(jSearch.root());
+        By input = findByToBy(jSearch.input());
+        By searchButton = findByToBy(jSearch.searchButton());
+        By suggestions = findByToBy(jSearch.suggestions());
+        if (input == null)
+            input = findByToBy(jSearch.jInput());
+        if (searchButton == null)
+            searchButton = findByToBy(jSearch.jSearchButton());
+        if (suggestions == null)
+            suggestions = findByToBy(jSearch.jSuggestions());
+
+        if (input != null)
+            avatar = new GetElementModule(input, this);
+        if (searchButton != null)
+            this.searchButton = new Button(searchButton);
+        if (suggestions != null)
+            this.suggestions = new TextList<>(suggestions);
     }
 }

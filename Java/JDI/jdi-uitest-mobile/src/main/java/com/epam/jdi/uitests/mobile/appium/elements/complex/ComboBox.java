@@ -20,8 +20,11 @@ package com.epam.jdi.uitests.mobile.appium.elements.complex;
 
 import com.epam.jdi.uitests.core.interfaces.complex.IComboBox;
 import com.epam.jdi.uitests.mobile.appium.elements.GetElementType;
+import com.epam.jdi.uitests.mobile.appium.elements.common.Label;
 import com.epam.jdi.uitests.mobile.appium.elements.common.TextField;
 import org.openqa.selenium.By;
+
+import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
 
 /**
  * ComboBox control implementation
@@ -30,6 +33,7 @@ import org.openqa.selenium.By;
  */
 public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements IComboBox<TEnum> {
     private GetElementType textField = new GetElementType();
+    public By labelLocator;
 
     public ComboBox() {
         super();
@@ -37,26 +41,34 @@ public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements ICo
 
     public ComboBox(By valueLocator) {
         super(valueLocator);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, this);
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate) {
         super(selectorLocator, optionsNamesLocatorTemplate);
-        textField = new GetElementType(selectorLocator);
+        textField = new GetElementType(selectorLocator, this);
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate, By valueLocator) {
         super(selectorLocator, optionsNamesLocatorTemplate);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, this);
     }
 
     public ComboBox(By selectorLocator, By optionsNamesLocatorTemplate, By valueLocator, By allOptionsNamesLocator) {
         super(selectorLocator, optionsNamesLocatorTemplate, allOptionsNamesLocator);
-        textField = new GetElementType(valueLocator);
+        textField = new GetElementType(valueLocator, this);
+    }
+
+    public String label() {
+        if (labelLocator == null)
+            throw exception("Label locator no specified");
+        Label label = new Label(labelLocator);
+        label.setParent(getParent());
+        return label.getText();
     }
 
     protected TextField textField() {
-        return textField.get(new TextField(), getAvatar());
+        return textField.get(TextField.class);
     }
 
     @Override
@@ -81,23 +93,41 @@ public class ComboBox<TEnum extends Enum> extends Dropdown<TEnum> implements ICo
         textField().focus();
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Input text in textfield
+     */
     public final void input(CharSequence text) {
         actions.input(text, this::inputAction);
     }
 
+    /**
+     * @param text Specify text to send keys to TextField
+     *             Input text in textfield
+     */
     public void sendKeys(CharSequence text) {
         input(text);
     }
 
+    /**
+     * @param text Specify text to input to TextField
+     *             Clear and input text in textfield
+     */
     public void newInput(CharSequence text) {
         clear();
         input(text);
     }
 
+    /**
+     * Clear textfield
+     */
     public final void clear() {
         actions.clear(this::clearAction);
     }
 
+    /**
+     * Focus(click) on textfield
+     */
     public final void focus() {
         actions.focus(this::focusAction);
     }

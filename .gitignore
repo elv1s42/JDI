@@ -2,13 +2,19 @@
 .idea/
 target/
 *.zip
-*.exe
 .logs/
 *.xlsx
-*.html
 bin/
 obj/
 .vs/
+__pycache__/
 packages/
 *.nupkg
-*.nuspec
+test-output/
+Debug/
+
+# ReSharper files
+*.DotSettings.user
+*.bat
+LATEST_RELEASE.txt
+*.user

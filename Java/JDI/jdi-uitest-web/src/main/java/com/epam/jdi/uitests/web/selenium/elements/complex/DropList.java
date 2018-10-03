@@ -20,12 +20,18 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
 
 import com.epam.jdi.uitests.core.interfaces.complex.IDropList;
 import com.epam.jdi.uitests.web.selenium.elements.GetElementType;
+import com.epam.jdi.uitests.web.selenium.elements.base.BaseElement;
 import com.epam.jdi.uitests.web.selenium.elements.base.Clickable;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
+import com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.JDropList;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.lang.reflect.Field;
 import java.util.function.Function;
+
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.WebAnnotationsUtil.findByToBy;
+import static com.epam.jdi.uitests.web.selenium.elements.pageobjects.annotations.objects.FillFromAnnotationRules.fieldHasAnnotation;
 
 /**
  * Select control implementation
@@ -50,11 +56,42 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
 
     public DropList(By valueLocator, By optionsNamesLocator, By allOptionsNamesLocator) {
         super(optionsNamesLocator, allOptionsNamesLocator);
-        this.button = new GetElementType(valueLocator);
+        this.button = new GetElementType(valueLocator, this);
+    }
+
+    public static void setUp(BaseElement el, Field field) {
+        if (!fieldHasAnnotation(field, JDropList.class, IDropList.class)) {
+            return;
+        }
+        ((DropList) el).setUp(field.getAnnotation(JDropList.class));
+    }
+
+    public DropList setUp(JDropList jDropList) {
+        By root = findByToBy(jDropList.root());
+        By list = findByToBy(jDropList.list());
+        By value = findByToBy(jDropList.value());
+        By expand = findByToBy(jDropList.expand());
+        if (root != null) {
+            Element el = new Element(root);
+            el.setParent(getParent());
+            setParent(el);
+            setLocator(root);
+        }
+        if (list != null) {
+            this.allLabels = new GetElementType(list, this);
+        }
+
+        if(value != null) {
+            this.button = new GetElementType(value, this);
+        }
+        if(expand != null) {
+            this.button = new GetElementType(expand, this);
+        }
+        return this;
     }
 
     protected Clickable button() {
-        return button.get(new Clickable(), getAvatar());
+        return button.get(Clickable.class);
     }
 
     protected void expandAction(String name) {
@@ -67,8 +104,9 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
 
     @Override
     protected void selectListAction(String... names) {
-        if (names == null || names.length == 0)
+        if (names == null || names.length == 0) {
             return;
+        }
         if (button() != null) {
             expandAction(names[0]);
             super.selectListAction(names);
@@ -107,11 +145,17 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         return getText.equals("") && getValue != null ? getValue : getText;
     }
 
+    /**
+     * Waits while Element becomes visible
+     */
     @Override
     public void waitDisplayed() {
         button().waitDisplayed();
     }
 
+    /**
+     * Waits while Element becomes invisible
+     */
     @Override
     public void waitVanished() {
         button().waitVanished();
@@ -121,7 +165,7 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         button().wait(resultFunc);
     }
 
-    public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition) {
+    public <R> R wait(Function<WebElement, R> resultFunc, Function<R, Boolean> condition) {
         return button().wait(resultFunc, condition);
     }
 
@@ -129,34 +173,61 @@ public class DropList<TEnum extends Enum> extends MultiSelector<TEnum> implement
         button().wait(resultFunc, timeoutSec);
     }
 
-    public <T> T wait(Function<WebElement, T> resultFunc, Function<T, Boolean> condition, int timeoutSec) {
+    public <R> R wait(Function<WebElement, R> resultFunc, Function<R, Boolean> condition, int timeoutSec) {
         return button().wait(resultFunc, condition, timeoutSec);
     }
 
+    /**
+     * @param attributeName Specify attribute name
+     * @param value         Specify attribute value
+     *                      Sets attribute value for Element
+     */
     public void setAttribute(String attributeName, String value) {
         button().setAttribute(attributeName, value);
     }
 
+    /**
+     * @return Get Element’s text
+     */
     public final String getText() {
         return actions.getText(this::getTextAction);
     }
 
+    /**
+     * @param text Specify expected text
+     * @return Wait while Element’s text contains expected text. Returns Element’s text
+     */
     public final String waitText(String text) {
         return actions.waitText(text, this::getTextAction);
     }
 
+    /**
+     * @param regEx Specify expected regular expression Text
+     * @return Wait while Element’s text matches regEx. Returns Element’s text
+     */
     public final String waitMatchText(String regEx) {
         return actions.waitMatchText(regEx, this::getTextAction);
     }
 
     public WebElement getWebElement() {
-        return new Element(getLocator()).getWebElement();
+        return new GetElementType(getLocator(), this).get(Clickable.class).getWebElement();
     }
 
+    /**
+     * Get element attribute
+     *
+     * @param name Specify name for attribute
+     * @return Returns chosen attribute
+     */
     public String getAttribute(String name) {
         return button().getAttribute(name);
     }
 
+    /**
+     * @param name  Specify attribute name
+     * @param value Specify attribute value
+     * Waits while attribute gets expected value. Return false if this not happens
+     */
     public void waitAttribute(String name, String value) {
         button().waitAttribute(name, value);
     }

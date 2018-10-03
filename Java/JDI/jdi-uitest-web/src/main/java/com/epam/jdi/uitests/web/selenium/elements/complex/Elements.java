@@ -18,41 +18,48 @@ package com.epam.jdi.uitests.web.selenium.elements.complex;
  */
 
 
-import com.epam.jdi.uitests.core.settings.JDISettings;
-import com.epam.jdi.uitests.web.selenium.elements.BaseElement;
+import com.epam.commons.LinqUtils;
+import com.epam.jdi.uitests.core.annotations.Title;
+import com.epam.jdi.uitests.core.interfaces.common.IText;
+import com.epam.jdi.uitests.web.selenium.elements.GetElementType;
+import com.epam.jdi.uitests.web.selenium.elements.WebCascadeInit;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
 import com.epam.jdi.uitests.web.selenium.elements.common.Button;
+import com.epam.jdi.uitests.web.selenium.elements.common.Text;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static com.epam.commons.EnumUtils.getEnumValue;
-import static com.epam.commons.LinqUtils.first;
-import static com.epam.commons.LinqUtils.select;
+import static com.epam.commons.LinqUtils.*;
+import static com.epam.commons.ReflectionUtils.getValueField;
 import static com.epam.jdi.uitests.core.settings.JDISettings.exception;
-
+import static com.epam.jdi.uitests.web.selenium.driver.WebDriverByUtils.fillByTemplate;
 
 /**
  * Created by Roman_Iovlev on 7/8/2015.
  */
-public class Elements<T extends Element> extends BaseElement implements List<T> {
+public class Elements<T extends Element> extends BaseSelector<Enum> implements List<T> {
     private Class<T> classType;
-
-    public Elements() {
-        this(null, null);
+    protected boolean isSelectedAction(String name) {
+        return false;
     }
 
-    public Elements(Class<T> classType) {
-        this(null, classType);
+    protected boolean isSelectedAction(int index) {
+        return false;
     }
-    public Elements(By byLocator) {
-        this(byLocator, null);
+
+    protected String getValueAction() {
+        return "UNDEFINED";
     }
+
     public Elements(By byLocator, Class<T> classType) {
         super(byLocator);
         this.classType = classType != null ? classType : (Class<T>) Button.class;
         elements = new ArrayList<>();
+        useCache = true;
     }
 
     protected boolean getElementByNameAction(WebElement element, String name) {
@@ -62,17 +69,28 @@ public class Elements<T extends Element> extends BaseElement implements List<T> 
     private List<T> elements;
 
     public List<T> listOfElements() {
-        return JDISettings.useCache && !elements.isEmpty()
-            ? elements
-            : (elements = select(getAvatar().searchAll().getElements(), el -> {
-                try {
-                    T element = classType.newInstance();
-                    element.setWebElement(el);
-                    return element;
-                } catch (Exception ex) {
-                    throw exception("Can't instantiate list element");
-                }
-            }));
+        if (useCache)
+            if (!elements.isEmpty() && elements.get(0).isDisplayed())
+                return elements;
+        else elements.clear();
+        return elements = select(getElements(), this::getListElement);
+    }
+    private T getListElement(WebElement el) {
+        try {
+            T element = classType.newInstance();
+            element.setWebElement(el);
+            element.useCache = useCache;
+            element.setParent(null);
+            new WebCascadeInit().initElements(element, avatar.getDriverName());
+            return element;
+        } catch (Exception ex) {
+            throw exception("Can't instantiate list element");
+        }
+    }
+
+    public <E> List<E> asData(Class<E> entityClass) {
+        return LinqUtils.select(listOfElements(),
+            element -> element.asEntity(entityClass));
     }
 
     public int size() {
@@ -128,15 +146,38 @@ public class Elements<T extends Element> extends BaseElement implements List<T> 
     }
 
     public void clear() {
-        listOfElements().clear();
+        elements.clear();
     }
 
     public T get(int index) {
         return listOfElements().get(index);
     }
-    public T get(String name) {
-        return first(listOfElements(), el -> getElementByNameAction(el.getWebElement(), name));
+
+    private boolean isTextElement(Field field) {
+        return field.getType().equals(Text.class) || field.getType().equals(IText.class);
     }
+    public T get(String name) {
+        Field[] fields = classType.getFields();
+        Field titleField = first(fields, f -> f.isAnnotationPresent(Title.class)
+                && (f.getType().equals(Text.class)|| f.getType().equals(IText.class)));
+        if (titleField != null)
+            return first(listOfElements(),
+                    el -> ((IText)getValueField(getFieldWithName(el, titleField.getName()), el))
+                            .getText().equals(name));
+        if (where(fields, this::isTextElement).size() == 1)
+            return first(listOfElements(),
+                    el -> ((IText)getValueField(first(el.getClass().getFields(), this::isTextElement), el))
+                            .getText().equals(name));
+        return getLocator().toString().contains("%s")
+                ? new GetElementType(fillByTemplate(getLocator(), name), getParent()).get(classType)
+                : first(listOfElements(), el -> getElementByNameAction(el.getWebElement(), name));
+    }
+    private Field getFieldWithName(Object o, String name) {
+        try {
+            return o.getClass().getField(name);
+        } catch (Exception ex) {throw exception("Can't get value from field %s", name); }
+    }
+
     public T get(Enum name) {
         return get(getEnumValue(name));
     }

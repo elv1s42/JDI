@@ -5,22 +5,23 @@ import com.epam.jdi.uitests.testing.unittests.InitTests;
 import com.epam.jdi.uitests.testing.unittests.enums.Preconditions;
 import com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData;
 import com.epam.jdi.uitests.web.selenium.elements.base.Element;
+import com.epam.web.matcher.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
+import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.jdi.uitests.core.settings.JDISettings.logger;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.HOME_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.enums.Preconditions.SUPPORT_PAGE;
 import static com.epam.jdi.uitests.testing.unittests.pageobjects.EpamJDISite.homePage;
 import static com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData.runParallel;
 import static com.epam.jdi.uitests.testing.unittests.tests.complex.CommonActionsData.waitTimeOut;
-import static com.epam.jdi.uitests.core.preconditions.PreconditionsState.isInState;
 import static com.epam.web.matcher.testng.Assert.areEquals;
 import static com.epam.web.matcher.testng.Assert.isTrue;
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 public class TextTests extends InitTests {
 
@@ -95,5 +96,10 @@ public class TextTests extends InitTests {
         String _value = "testValue";
         textItem.get().setAttribute(_attributeName, _value);
         CommonActionsData.checkText(() -> ((Element)textItem.get()).getWebElement().getAttribute(_attributeName), _value);
+    }
+
+    @Test
+    public void imageIsDisplayedTest(){
+        Assert.assertTrue(textItem.get().isDisplayed());
     }
 }

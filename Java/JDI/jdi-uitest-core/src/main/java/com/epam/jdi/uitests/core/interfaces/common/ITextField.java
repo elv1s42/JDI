@@ -18,9 +18,9 @@ package com.epam.jdi.uitests.core.interfaces.common;
  */
 
 
-import com.epam.jdi.uitests.core.annotations.JDIAction;
 import com.epam.jdi.uitests.core.interfaces.base.IElement;
 import com.epam.jdi.uitests.core.interfaces.base.ISetValue;
+import ru.yandex.qatools.allure.annotations.Step;
 
 /**
  * Created by Roman_Iovlev on 7/6/2015.
@@ -30,14 +30,20 @@ public interface ITextField extends ISetValue, IText, IElement {
      * @param text Specify text to input to TextField
      *             Input text in textfield
      */
-    @JDIAction
+    @Step
     void input(CharSequence text);
+
+    /**
+     * Returns label of text field
+     */
+    @Step
+    String label();
 
     /**
      * @param text Specify text to send keys to TextField
      *             Input text in textfield
      */
-    @JDIAction
+    @Step
     default void sendKeys(CharSequence text) {
         input(text);
     }
@@ -45,18 +51,18 @@ public interface ITextField extends ISetValue, IText, IElement {
      * @param text Specify text to input to TextField
      *             Clear and input text in textfield
      */
-    @JDIAction
+    @Step
     void newInput(CharSequence text);
 
     /**
      * Clear textfield
      */
-    @JDIAction
+    @Step
     void clear();
 
     /**
      * Focus(click) on textfield
      */
-    @JDIAction
+    @Step
     void focus();
 }
